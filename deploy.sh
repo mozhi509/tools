@@ -62,7 +62,7 @@ update_system() {
     log_info "更新系统包..."
     if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
         apt update && apt upgrade -y
-    elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]]; then
+    elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]] || [[ $OS == *"OpenCloudOS"* ]]; then
         yum update -y
     else
         log_warning "未知系统类型，跳过系统更新"
@@ -73,11 +73,12 @@ update_system() {
 install_nodejs() {
     log_info "安装Node.js..."
     if ! command -v node &> /dev/null; then
-        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+        # 对于OpenCloudOS/CentOS/RHEL，使用NodeSource仓库
+        curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
         if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
             apt-get install -y nodejs
-        elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]]; then
-            yum install -y nodejs npm
+        elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]] || [[ $OS == *"OpenCloudOS"* ]]; then
+            yum install -y nodejs
         fi
     else
         log_info "Node.js已安装: $(node --version)"
@@ -98,7 +99,7 @@ install_nginx() {
     if ! command -v nginx &> /dev/null; then
         if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
             apt install -y nginx
-        elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]]; then
+        elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]] || [[ $OS == *"OpenCloudOS"* ]]; then
             yum install -y nginx
         fi
     else
@@ -118,7 +119,7 @@ install_git() {
     if ! command -v git &> /dev/null; then
         if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
             apt install -y git
-        elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]]; then
+        elif [[ $OS == *"CentOS"* ]] || [[ $OS == *"Rocky"* ]] || [[ $OS == *"OpenCloudOS"* ]]; then
             yum install -y git
         fi
     else
@@ -166,7 +167,9 @@ install_and_build() {
 configure_nginx() {
     log_info "配置Nginx..."
     
-    cat > /etc/nginx/sites-available/$PROJECT_NAME << EOF
+    if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
+        # Debian/Ubuntu的配置方式
+        cat > /etc/nginx/sites-available/$PROJECT_NAME << EOF
 server {
     listen 80;
     server_name _;
@@ -198,12 +201,50 @@ server {
 }
 EOF
 
-    # 启用站点
-    if [ -f /etc/nginx/sites-enabled/default ]; then
-        rm /etc/nginx/sites-enabled/default
-    fi
+        # 启用站点
+        if [ -f /etc/nginx/sites-enabled/default ]; then
+            rm /etc/nginx/sites-enabled/default
+        fi
+        ln -sf /etc/nginx/sites-available/$PROJECT_NAME /etc/nginx/sites-enabled/
+    else
+        # CentOS/RHEL/OpenCloudOS的配置方式
+        cat > /etc/nginx/conf.d/$PROJECT_NAME.conf << EOF
+server {
+    listen 80;
+    server_name _;
     
-    ln -sf /etc/nginx/sites-available/$PROJECT_NAME /etc/nginx/sites-enabled/
+    # 前端静态文件
+    location / {
+        root $DEPLOY_DIR/client/build;
+        index index.html index.htm;
+        try_files \$uri \$uri/ /index.html;
+    }
+    
+    # API代理
+    location /api/ {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+    
+    # 健康检查
+    location /health {
+        proxy_pass http://localhost:3001/api/health;
+    }
+}
+EOF
+        
+        # 备份并移除默认配置
+        if [ -f /etc/nginx/conf.d/default.conf ]; then
+            mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
+        fi
+    fi
     
     # 测试并重启Nginx
     nginx -t

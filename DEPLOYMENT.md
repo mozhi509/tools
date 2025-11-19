@@ -31,13 +31,24 @@
 
 2. **安装Node.js**
    ```bash
+   # Ubuntu/Debian系统
    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
    apt-get install -y nodejs
+   
+   # CentOS/RHEL/OpenCloudOS系统
+   curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+   yum install -y nodejs
    ```
 
 3. **安装必要工具**
    ```bash
+   # Ubuntu/Debian系统
    apt install -y git nginx
+   
+   # CentOS/RHEL/OpenCloudOS系统
+   yum install -y git nginx
+   
+   # 所有系统都需要
    npm install -g pm2
    ```
 
@@ -68,7 +79,7 @@
 ## 📋 部署要求
 
 ### 系统要求
-- **操作系统**: Ubuntu 20.04+ / CentOS 8+ / Debian 11+
+- **操作系统**: Ubuntu 20.04+ / CentOS 8+ / Debian 11+ / OpenCloudOS 8+
 - **内存**: 最低 1GB，推荐 2GB+
 - **存储**: 最低 10GB 可用空间
 - **网络**: 公网IP，开放80/443端口
