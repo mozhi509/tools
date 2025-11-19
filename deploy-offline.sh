@@ -240,17 +240,21 @@ configure_nginx() {
     
     # 备份现有配置
     if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
+        # 禁用默认配置（这是关键！）
         [ -f /etc/nginx/sites-enabled/default ] && mv /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.bak
+        [ -f /etc/nginx/sites-enabled/000-default ] && rm -f /etc/nginx/sites-enabled/000-default
         CONFIG_PATH="/etc/nginx/sites-available/$PROJECT_NAME"
     else
+        # 禁用默认配置（这是关键！）
         [ -f /etc/nginx/conf.d/default.conf ] && mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
         CONFIG_PATH="/etc/nginx/conf.d/$PROJECT_NAME.conf"
     fi
     
-    # 创建配置
+    # 创建配置（添加default_server确保成为默认站点）
     cat > $CONFIG_PATH << EOF
 server {
-    listen 80;
+    listen 80 default_server;
+    listen [::]:80 default_server;
     server_name _;
     
     # 前端静态文件
@@ -277,18 +281,32 @@ server {
     location /health {
         proxy_pass http://localhost:3001/api/health;
     }
+    
+    # 错误页面
+    error_page 404 /index.html;
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
 }
 EOF
     
     # 启用配置
     if [[ $OS == *"Ubuntu"* ]] || [[ $OS == *"Debian"* ]]; then
         ln -sf $CONFIG_PATH /etc/nginx/sites-enabled/
+        # 确保没有其他默认配置文件
+        [ -f /etc/nginx/sites-enabled/000-default.conf ] && rm -f /etc/nginx/sites-enabled/000-default.conf
+        [ -f /etc/nginx/sites-enabled/default.conf ] && rm -f /etc/nginx/sites-enabled/default.conf
     fi
     
     # 测试并重启Nginx
-    nginx -t && systemctl reload nginx
+    nginx -t && systemctl restart nginx
+    
+    # 等待2秒让Nginx重新加载
+    sleep 2
     
     log_success "Nginx配置完成"
+    log_info "已禁用默认页面，现在应该显示你的应用"
 }
 
 # 创建PM2配置文件
@@ -392,10 +410,45 @@ show_result() {
     SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "localhost")
     echo "🌐 访问地址:"
     echo "   网站首页: http://$SERVER_IP"
-    echo "   API地址: http://$SERVER_IP/api"
+    echo "   API地址: http://SERVER_IP/api"
     echo "   健康检查: http://$SERVER_IP/health"
     echo ""
     
+    # 验证部署
+    echo "🔍 部署验证:"
+    
+    # 检查前端文件
+    if [ -f "client/build/index.html" ]; then
+        echo "   ✅ 前端文件已构建"
+    else
+        echo "   ❌ 前端文件未构建"
+    fi
+    
+    # 检查Nginx配置
+    if [ -n "$CONFIG_PATH" ] && [ -f "$CONFIG_PATH" ]; then
+        echo "   ✅ Nginx配置已创建"
+    else
+        echo "   ❌ Nginx配置未找到"
+    fi
+    
+    # 检查端口监听
+    sleep 2
+    if netstat -tlnp | grep -q ':80\s.*nginx'; then
+        echo "   ✅ Nginx监听80端口"
+    else
+        echo "   ❌ Nginx未监听80端口"
+    fi
+    
+    # 检查应用状态
+    if command -v pm2 &> /dev/null && pm2 list | grep -q "$SERVICE_NAME.*online"; then
+        echo "   ✅ 后端服务运行中"
+    elif [ -f "app.pid" ] && kill -0 $(cat app.pid) 2>/dev/null; then
+        echo "   ✅ 后端服务运行中(no-hup)"
+    else
+        echo "   ❌ 后端服务未运行"
+    fi
+    
+    echo ""
     echo "🔧 管理命令:"
     if command -v pm2 &> /dev/null; then
         echo "   查看应用状态: pm2 status"
@@ -406,6 +459,12 @@ show_result() {
         echo "   查看日志: tail -f logs/app.log"
         echo "   停止应用: kill \$(cat app.pid)"
     fi
+    
+    # 快速测试命令
+    echo ""
+    echo "🧪 快速测试:"
+    echo "   curl -I http://localhost"
+    echo "   curl http://localhost/api/health"
     echo ""
     
     echo "📁 重要文件:"
@@ -417,7 +476,54 @@ show_result() {
     echo "   应用日志: $DEPLOY_DIR/logs/"
     echo ""
     
+    echo "💡 重要提醒:"
+    echo "   1. 确保腾讯云安全组开放80端口"
+    echo "   2. 如果显示默认页面，请清除浏览器缓存"
+    echo "   3. 无法访问请检查: ./check-web.sh"
+    echo ""
+    
     echo "==============================================="
+    
+    # 创建检查脚本
+    cat > check-web.sh << 'EOF'
+#!/bin/bash
+echo "=== Web应用状态检查 ==="
+echo ""
+
+echo "🌐 获取IP地址:"
+PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || echo "localhost")
+echo "   公网IP: $PUBLIC_IP"
+echo ""
+
+echo "🔧 服务状态:"
+systemctl is-active nginx
+pm2 status 2>/dev/null || ps aux | grep -E 'node|pm2' | grep -v grep
+echo ""
+
+echo "📡 端口监听:"
+netstat -tlnp | grep -E ':(80|3001)\s'
+echo ""
+
+echo "🌍 访问测试:"
+echo -n "   本地访问: "
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost 2>/dev/null || echo "失败"
+
+echo -n "   API测试: "
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost/api/health 2>/dev/null || echo "失败"
+echo ""
+
+echo "📁 文件检查:"
+[ -f "client/build/index.html" ] && echo "   ✅ 前端文件存在" || echo "   ❌ 前端文件不存在"
+[ -f "server/index.js" ] && echo "   ✅ 后端文件存在" || echo "   ❌ 后端文件不存在"
+echo ""
+
+echo "🔗 访问地址:"
+echo "   http://$PUBLIC_IP"
+echo "   http://$PUBLIC_IP:8080 (备用端口)"
+EOF
+
+    chmod +x check-web.sh
+    log_info "创建检查脚本: ./check-web.sh"
 }
 
 # 主函数
