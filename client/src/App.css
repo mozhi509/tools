@@ -1,0 +1,274 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding: 0;
+}
+
+/* JSON工具专用容器 */
+.json-tool-container {
+  min-height: 100vh;
+  padding: 10px 10px;
+  background: #f8f9fa;
+}
+
+/* 工具面板样式 */
+.tool-panel {
+  background: white;
+  border-radius: 4px;
+  padding: 10px 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 6px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.panel-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+/* 表单元素样式 */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 150px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+/* 按钮样式 */
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 100px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #1e7e34;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid #007bff;
+  color: #007bff;
+}
+
+.btn-outline:hover {
+  background: #007bff;
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* JSON格式化工具专用布局 */
+.json-formatter-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  height: calc(100vh - 280px);
+  min-height: 600px;
+}
+
+@media (max-width: 768px) {
+  .json-formatter-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: auto;
+  }
+}
+
+.json-formatter-panel {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.json-formatter-panel textarea {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  resize: none;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+  padding: 10px 10px;
+}
+
+.json-output-container {
+  flex: 1;
+  overflow: auto;
+  min-height: 400px;
+}
+
+/* 工具头部样式 */
+.tool-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.tool-title {
+  font-size: 2rem;
+  color: #212529;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.tool-description {
+  color: #6c757d;
+  font-size: 1.1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .json-tool-container {
+    padding: 0.5rem;
+  }
+  
+  .tool-panel {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .json-formatter-layout {
+    gap: 1rem;
+  }
+  
+  .tool-title {
+    font-size: 1.5rem;
+  }
+  
+  .tool-description {
+    font-size: 1rem;
+  }
+}
+
+/* Toast容器样式，防止抖动 */
+.Toastify__toast-container {
+  position: fixed !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  z-index: 9999 !important;
+  width: auto !important;
+  max-width: 400px !important;
+  transform: none !important;
+}
+
+.Toastify__toast {
+  margin: 0 !important;
+  margin-bottom: 0.5rem !important;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+.Toastify__toast-body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.Toastify__progress-bar {
+  display: none !important;
+}
+
+/* 防止body移动 */
+body {
+  overflow-x: hidden;
+}
