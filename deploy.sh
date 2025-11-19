@@ -136,6 +136,13 @@ create_deploy_dir() {
 
 # 克隆项目
 clone_project() {
+    # 检查当前目录是否已经是项目目录
+    if [ -f "./deploy.sh" ] && [ -f "./package.json" ]; then
+        log_info "当前目录已是项目目录，跳过克隆步骤"
+        log_info "继续使用现有项目文件进行部署..."
+        return 0
+    fi
+    
     log_info "克隆项目从GitHub..."
     if [ -d ".git" ]; then
         log_info "项目已存在，拉取最新代码..."
