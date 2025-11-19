@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  web-toolkit:
+    build: .
+    container_name: web-toolkit
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - web-toolkit-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: web-toolkit-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./client/build:/usr/share/nginx/html
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - web-toolkit
+    restart: unless-stopped
+    networks:
+      - web-toolkit-network
+
+networks:
+  web-toolkit-network:
+    driver: bridge
+
+volumes:
+  logs:
