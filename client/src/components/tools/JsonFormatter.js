@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from 'react';
 import { 
   FileJson, 
   CheckCircle, 
@@ -16,8 +15,15 @@ import {
 import { ChevronRight, ChevronDown } from 'lucide-react';
 
 // 可折叠的JSON节点组件
-const JsonNode = ({ data, level = 0, isLast = false, keyName = null }) => {
-  const [isExpanded, setIsExpanded] = React.useState(level < 2);
+const JsonNode = ({ data, level = 0, isLast = false, keyName = null, forceExpand = false }) => {
+  const [isExpanded, setIsExpanded] = React.useState(forceExpand || level < 2);
+  
+  // 响应全局展开状态变化
+  React.useEffect(() => {
+    if (forceExpand !== undefined) {
+      setIsExpanded(forceExpand);
+    }
+  }, [forceExpand]);
   
   const renderValue = (value) => {
     if (value === null) return <span style={{ color: '#d73a49' }}>null</span>;
@@ -76,11 +82,11 @@ const JsonNode = ({ data, level = 0, isLast = false, keyName = null }) => {
             </>
           )}
           {isExpanded ? (
-            <ChevronDown size={14} style={{ marginRight: '4px' }} />
+            <ChevronDown size={14} style={{ marginRight: '4px' }} className="json-expand-btn" />
           ) : (
-            <ChevronRight size={14} style={{ marginRight: '4px' }} />
+            <ChevronRight size={14} style={{ marginRight: '4px' }} className="json-expand-btn" />
           )}
-          <span style={{ color: '#22863a' }}>[</span>
+          <span style={{ color: '#22863a' }}>{'['}</span>
           {!isExpanded && (
             <span style={{ color: '#6a737d' }}>
               {data.length} items
@@ -97,6 +103,7 @@ const JsonNode = ({ data, level = 0, isLast = false, keyName = null }) => {
                   data={item} 
                   level={level + 1} 
                   isLast={index === data.length - 1}
+                  forceExpand={forceExpand}
                 />
               </div>
             ))}
@@ -165,11 +172,12 @@ const JsonNode = ({ data, level = 0, isLast = false, keyName = null }) => {
                 level={level + 1} 
                 keyName={key}
                 isLast={index === entries.length - 1}
+                forceExpand={forceExpand}
               />
             </div>
           ))}
           <div style={{ marginLeft: `${level * 20}px` }}>
-            <span style={{ color: '#22863a' }}>}</span>
+            <span style={{ color: '#22863a' }}>{'}'}</span>
             {!isLast && <span>,</span>}
           </div>
         </>
@@ -179,7 +187,7 @@ const JsonNode = ({ data, level = 0, isLast = false, keyName = null }) => {
 };
 
 // 可折叠的JSON显示组件
-const CollapsibleJSON = ({ data }) => {
+const CollapsibleJSON = ({ data, forceExpand }) => {
   
   // 解析JSON对象用于折叠显示
   let jsonData;
@@ -212,7 +220,7 @@ const CollapsibleJSON = ({ data }) => {
         overflow: 'auto'
       }}
     >
-      <JsonNode data={jsonData} isLast={true} />
+      <JsonNode data={jsonData} isLast={true} forceExpand={forceExpand} />
     </div>
   );
 };
@@ -224,6 +232,9 @@ const JsonFormatter = () => {
   const [indent, setIndent] = useState(2);
   const [showRawOutput, setShowRawOutput] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50);
+  const [isDragging, setIsDragging] = useState(false);
+  const [expandAll, setExpandAll] = useState(false);
 
   const formatJson = async () => {
     if (!inputJson.trim()) {
@@ -232,7 +243,7 @@ const JsonFormatter = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('/api/tools/json/format', {
+      const response = await fetch('http://localhost:3001/api/tools/json/format', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,14 +256,19 @@ const JsonFormatter = () => {
 
       const data = await response.json();
       
+      console.log('格式化响应:', data);
+      
       if (data.success) {
         setOutputJson(data.formatted);
         setIsValid(true);
       } else {
-        setOutputJson('');
+        console.error('格式化失败:', data.error);
+        setOutputJson(data.error || '格式化失败');
         setIsValid(false);
       }
     } catch (error) {
+      console.error('格式化错误:', error);
+      setOutputJson('网络连接错误');
       setIsValid(false);
     } finally {
       setProcessing(false);
@@ -265,7 +281,7 @@ const JsonFormatter = () => {
     }
 
     try {
-      const response = await fetch('/api/tools/json/validate', {
+      const response = await fetch('http://localhost:3001/api/tools/json/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -279,6 +295,8 @@ const JsonFormatter = () => {
         setIsValid(data.valid);
       }
     } catch (error) {
+      console.error('验证错误:', error);
+
     }
   };
 
@@ -289,7 +307,7 @@ const JsonFormatter = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('/api/tools/json/minify', {
+      const response = await fetch('http://localhost:3001/api/tools/json/minify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -306,7 +324,7 @@ const JsonFormatter = () => {
         setIsValid(false);
       }
     } catch (error) {
-      toast.error('网络错误，请稍后重试');
+
     } finally {
       setProcessing(false);
     }
@@ -314,7 +332,7 @@ const JsonFormatter = () => {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(outputJson);
-    toast.success('已复制到剪贴板！');
+
   };
 
   const downloadJson = () => {
@@ -334,7 +352,81 @@ const JsonFormatter = () => {
     setInputJson('');
     setOutputJson('');
     setIsValid(null);
-    toast.info('已清空所有内容');
+
+  };
+
+  // 拖拽处理函数
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    
+    const container = e.currentTarget;
+    const containerRect = container.getBoundingClientRect();
+    const newWidthPercent = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+    
+    // 限制最小宽度为20%，最大宽度为80%
+    const constrainedWidth = Math.max(20, Math.min(80, newWidthPercent));
+    setLeftPanelWidth(constrainedWidth);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+
+  // 全局鼠标事件监听
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (!isDragging) return;
+      
+      const container = document.querySelector('.json-formatter-layout');
+      if (!container) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      const newWidthPercent = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      
+      // 限制最小宽度为20%，最大宽度为80%
+      const constrainedWidth = Math.max(20, Math.min(80, newWidthPercent));
+      setLeftPanelWidth(constrainedWidth);
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }
+  }, [isDragging]);
+
+  // 全部展开/收起功能
+  const toggleExpandAll = () => {
+    const newState = !expandAll;
+    setExpandAll(newState);
+    
+    // 强制重新渲染CollapsibleJSON组件
+    setOutputJson(''); // 清空
+    setTimeout(() => {
+      setOutputJson(outputJson); // 恢复
+
+    }, 50);
   };
 
   const loadSample = () => {
@@ -433,12 +525,58 @@ const JsonFormatter = () => {
           </select>
         </div>
         </div>
+        
+        {/* 状态指示器 */}
+        {isValid !== null && (
+          <div style={{ 
+            padding: '0.5rem 1rem', 
+            fontSize: '0.875rem', 
+            color: isValid ? '#28a745' : '#dc3545',
+            background: isValid ? '#d4edda' : '#f8d7da',
+            borderRadius: '4px',
+            marginTop: '0.5rem',
+            display: 'inline-block'
+          }}>
+            {isValid ? '✓ JSON格式正确' : '✗ JSON格式错误'}
+          </div>
+        )}
+        
+        {/* 调试信息 */}
+        {process.env.NODE_ENV === 'development' && (
+          <div style={{ 
+            padding: '0.5rem', 
+            fontSize: '0.75rem', 
+            background: '#f8f9fa',
+            borderRadius: '4px',
+            marginTop: '0.5rem',
+            fontFamily: 'monospace',
+            border: '1px solid #dee2e6'
+          }}>
+            <div>缩进: {indent}</div>
+            <div>输入长度: {inputJson.length}</div>
+            <div>输出长度: {outputJson.length}</div>
+            <div>处理状态: {processing ? '处理中...' : '空闲'}</div>
+          </div>
+        )}
       </div>
 
       {/* 左右布局的输入输出区域 */}
-      <div className="json-formatter-layout">
+      <div 
+        className="json-formatter-layout"
+        style={{ display: 'flex', position: 'relative' }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         {/* 左侧输入区域 */}
-        <div className="json-formatter-panel tool-panel">
+        <div 
+          className="json-formatter-panel tool-panel"
+          style={{ 
+            width: `${leftPanelWidth}%`, 
+            borderRight: 'none',
+            position: 'relative'
+          }}
+        >
           <div className="panel-header">
             <h3 className="panel-title">
               输入JSON
@@ -470,8 +608,28 @@ const JsonFormatter = () => {
           </div>
         </div>
 
+        {/* 拖拽分隔线 */}
+        <div
+          style={{
+            width: '4px',
+            backgroundColor: isDragging ? '#4682B4' : '#87CEEB',
+            cursor: 'col-resize',
+            position: 'relative',
+            zIndex: 10,
+            transition: isDragging ? 'none' : 'background-color 0.2s ease',
+            flexShrink: 0
+          }}
+          onMouseDown={handleMouseDown}
+        />
+        
         {/* 右侧输出区域 */}
-        <div className="json-formatter-panel tool-panel">
+        <div 
+          className="json-formatter-panel tool-panel"
+          style={{ 
+            flex: 1,
+            borderLeft: 'none'
+          }}
+        >
           <div className="panel-header">
             <h3 className="panel-title">
               格式化结果
@@ -479,7 +637,7 @@ const JsonFormatter = () => {
                 <CheckCircle size={16} color="#28a745" style={{ marginLeft: '0.5rem' }} />
               )}
             </h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button 
                 className="btn btn-outline"
                 onClick={() => setShowRawOutput(!showRawOutput)}
@@ -487,6 +645,14 @@ const JsonFormatter = () => {
               >
                 {showRawOutput ? <EyeOff size={16} /> : <Eye size={16} />}
                 {showRawOutput ? '折叠视图' : '语法高亮'}
+              </button>
+              <button 
+                className="btn btn-outline"
+                onClick={toggleExpandAll}
+                disabled={!outputJson || showRawOutput}
+              >
+                <ChevronDown size={16} />
+                {expandAll ? '全部收起' : '全部展开'}
               </button>
               <button 
                 className="btn btn-outline"
@@ -521,8 +687,8 @@ const JsonFormatter = () => {
                 }}
               />
             ) : (
-              <div className="json-output-container" style={{ height: '100%' }}>
-                <CollapsibleJSON data={outputJson} />
+              <div className="json-output" style={{ height: '100%' }}>
+                <CollapsibleJSON data={outputJson} forceExpand={expandAll} />
               </div>
             )
           ) : (
@@ -553,30 +719,7 @@ const JsonFormatter = () => {
         </div>
       </div>
 
-      {/* 使用说明 */}
-      <div className="tool-panel" style={{ marginTop: '6px' }}>
-        <div className="panel-header">
-          <h2 className="panel-title">使用说明</h2>
-        </div>
-        <div style={{ color: '#6c757d', lineHeight: '1.6' }}>
-          <p><strong>JSON格式化工具功能：</strong></p>
-          <ul style={{ paddingLeft: '1.5rem' }}>
-            <li>格式化：将压缩的JSON数据格式化为易读的缩进格式</li>
-            <li>验证：检查JSON数据格式是否正确</li>
-            <li>压缩：将格式化的JSON数据压缩为一行</li>
-            <li>交换：快速交换输入和输出内容</li>
-            <li>复制：一键复制格式化后的JSON数据</li>
-            <li>下载：将格式化后的JSON数据保存为文件</li>
-          </ul>
-          <p><strong>快捷操作：</strong></p>
-          <ul style={{ paddingLeft: '1.5rem' }}>
-            <li>支持自定义缩进空格数（2、4、8）</li>
-            <li>提供语法高亮显示，更易阅读</li>
-            <li>实时显示字符数和行数统计</li>
-            <li>提供示例数据，方便快速测试</li>
-          </ul>
-        </div>
-      </div>
+
     </div>
   );
 };

@@ -140,18 +140,50 @@ textarea.form-control {
 
 /* JSON格式化工具专用布局 */
 .json-formatter-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  height: calc(100vh - 280px);
-  min-height: 600px;
+  display: flex;
+  height: calc(100vh - 250px);
+  min-height: 400px;
+  position: relative;
+}
+
+/* 拖拽分隔线样式 */
+.json-formatter-layout > div:nth-child(2) {
+  width: 4px !important;
+  background-color: #87CEEB;
+  cursor: col-resize;
+  position: relative;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.json-formatter-layout > div:nth-child(2):hover {
+  background-color: #5F9FD8;
+}
+
+.json-formatter-layout > div:nth-child(2).dragging {
+  background-color: #4682B4;
+}
+
+/* 确保面板不会在拖拽时收缩 */
+.json-formatter-panel {
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
   .json-formatter-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     height: auto;
     min-height: auto;
+  }
+  
+  .json-formatter-layout > div:nth-child(2) {
+    display: none;
+  }
+  
+  .json-formatter-panel {
+    min-height: 300px;
   }
 }
 
