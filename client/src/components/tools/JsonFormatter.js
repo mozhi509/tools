@@ -243,7 +243,7 @@ const JsonFormatter = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:3001/api/tools/json/format', {
+      const response = await fetch('/api/tools/json/format', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +281,7 @@ const JsonFormatter = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/tools/json/validate', {
+      const response = await fetch('/api/tools/json/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +307,7 @@ const JsonFormatter = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('http://localhost:3001/api/tools/json/minify', {
+      const response = await fetch('/api/tools/json/minify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
