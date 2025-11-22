@@ -212,3 +212,125 @@
 [1] 
 [1] webpack compiled with 1 warning
 [1] No issues found.
+[1] Compiling...
+[1] Compiled with warnings.
+[1] 
+[1] [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] Search for the keywords to learn more about each warning.
+[1] To ignore, add // eslint-disable-next-line to the line before.
+[1] 
+[1] WARNING in [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] webpack compiled with 1 warning
+[1] No issues found.
+[0] [32m[nodemon] restarting due to changes...[39m
+[0] [32m[nodemon] starting `ts-node server/index.ts`[39m
+[0] 服务器运行在端口 3001
+[1] Compiled with warnings.
+[1] 
+[1] [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] Search for the keywords to learn more about each warning.
+[1] To ignore, add // eslint-disable-next-line to the line before.
+[1] 
+[1] WARNING in [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] webpack compiled with 1 warning
+[1] Files successfully emitted, waiting for typecheck results...
+[1] Issues checking in progress...
+[1] Compiled with warnings.
+[1] 
+[1] [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] Search for the keywords to learn more about each warning.
+[1] To ignore, add // eslint-disable-next-line to the line before.
+[1] 
+[1] WARNING in [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] webpack compiled with 1 warning
+[1] Files successfully emitted, waiting for typecheck results...
+[1] Issues checking in progress...
+[1] No issues found.
+[0] [32m[nodemon] restarting due to changes...[39m
+[0] [32m[nodemon] restarting due to changes...[39m
+[0] [32m[nodemon] starting `ts-node server/index.ts`[39m
+[0] 服务器运行在端口 3001
