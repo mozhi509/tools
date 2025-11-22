@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: 'web-toolkit',
-    script: 'server/index.js',
+    script: 'dist/index.js',
     cwd: '/var/www/web-toolkit',
     instances: 'max',
     exec_mode: 'cluster',

@@ -1,13 +1,13 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const path = require('path');
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+// import helmet from 'helmet';
+import path from 'path';
+import toolsRouter from './routes/tools';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // 中间件
-app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -18,22 +18,22 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // API 路由
-app.use('/api/tools', require('./routes/tools'));
+app.use('/api/tools', toolsRouter);
 
 // 健康检查
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // 生产环境下所有其他路由返回React应用
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
+  app.get('*', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, '../client/build/index.html'));
   });
 }
 
 // 错误处理中间件
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: '服务器内部错误' });
 });

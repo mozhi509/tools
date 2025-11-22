@@ -1,0 +1,214 @@
+
+> web-toolkit@1.0.0 dev
+> concurrently "npm run server:dev" "npm run client"
+
+[1] 
+[1] > web-toolkit@1.0.0 client
+[1] > cd client && npm start
+[1] 
+[0] 
+[0] > web-toolkit@1.0.0 server:dev
+[0] > nodemon --exec ts-node server/index.ts
+[0] 
+[1] 
+[1] > client@0.1.0 start
+[1] > react-scripts start
+[1] 
+[0] [33m[nodemon] 3.1.11[39m
+[0] [33m[nodemon] to restart at any time, enter `rs`[39m
+[0] [33m[nodemon] watching path(s): *.*[39m
+[0] [33m[nodemon] watching extensions: ts,json[39m
+[0] [32m[nodemon] starting `ts-node server/index.ts`[39m
+[0] 服务器运行在端口 3001
+[1] (node:28731) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[1] (Use `node --trace-deprecation ...` to show where the warning was created)
+[1] (node:28731) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+[1] Starting the development server...
+[1] 
+[1] Failed to compile.
+[1] 
+[1] SyntaxError: /Users/zhiming_li/CodeBuddy/tools/client/src/components/tools/RegexTester.tsx: Identifier 'currentTheme' has already been declared. (80:8)
+[1]   78 |   };
+[1]   79 |
+[1] > 80 |   const currentTheme = getThemeColors(theme);
+[1]      |         ^
+[1]   81 |
+[1]   82 |   return (
+[1]   83 |     <div style={{
+[1] WARNING in [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/RegexTester.tsx
+[1]   Line 80:9:  'currentTheme' is already defined  @typescript-eslint/no-redeclare
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] ERROR in ./src/components/tools/RegexTester.tsx
+[1] Module build failed (from ./node_modules/babel-loader/lib/index.js):
+[1] SyntaxError: /Users/zhiming_li/CodeBuddy/tools/client/src/components/tools/RegexTester.tsx: Identifier 'currentTheme' has already been declared. (80:8)
+[1] 
+[1]   78 |   };
+[1]   79 |
+[1] > 80 |   const currentTheme = getThemeColors(theme);
+[1]      |         ^
+[1]   81 |
+[1]   82 |   return (
+[1]   83 |     <div style={{
+[1]     at constructor (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:367:19)
+[1]     at TypeScriptParserMixin.raise (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:6624:19)
+[1]     at TypeScriptScopeHandler.checkRedeclarationInScope (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:1646:19)
+[1]     at TypeScriptScopeHandler.declareName (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:1612:12)
+[1]     at TypeScriptScopeHandler.declareName (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:4909:11)
+[1]     at TypeScriptParserMixin.declareNameFromIdentifier (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:7594:16)
+[1]     at TypeScriptParserMixin.checkIdentifier (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:7590:12)
+[1]     at TypeScriptParserMixin.checkLVal (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:7527:12)
+[1]     at TypeScriptParserMixin.parseVarId (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13488:10)
+[1]     at TypeScriptParserMixin.parseVarId (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:9805:11)
+[1]     at TypeScriptParserMixin.parseVar (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13459:12)
+[1]     at TypeScriptParserMixin.parseVarStatement (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13306:10)
+[1]     at TypeScriptParserMixin.parseVarStatement (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:9469:31)
+[1]     at TypeScriptParserMixin.parseStatementContent (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12927:23)
+[1]     at TypeScriptParserMixin.parseStatementContent (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:9569:18)
+[1]     at TypeScriptParserMixin.parseStatementLike (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12843:17)
+[1]     at TypeScriptParserMixin.parseStatementListItem (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12823:17)
+[1]     at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13392:61)
+[1]     at TypeScriptParserMixin.parseBlockBody (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13385:10)
+[1]     at TypeScriptParserMixin.parseBlock (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13373:10)
+[1]     at TypeScriptParserMixin.parseFunctionBody (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12174:24)
+[1]     at TypeScriptParserMixin.parseArrowExpression (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12149:10)
+[1]     at TypeScriptParserMixin.parseParenAndDistinguishExpression (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:11759:12)
+[1]     at TypeScriptParserMixin.parseExprAtom (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:11395:23)
+[1]     at TypeScriptParserMixin.parseExprAtom (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:4793:20)
+[1]     at TypeScriptParserMixin.parseExprSubscripts (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:11145:23)
+[1]     at TypeScriptParserMixin.parseUpdate (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:11130:21)
+[1]     at TypeScriptParserMixin.parseMaybeUnary (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:11110:23)
+[1]     at TypeScriptParserMixin.parseMaybeUnary (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:9890:18)
+[1]     at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:10963:61)
+[1]     at TypeScriptParserMixin.parseExprOps (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:10968:23)
+[1]     at TypeScriptParserMixin.parseMaybeConditional (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:10945:23)
+[1]     at TypeScriptParserMixin.parseMaybeAssign (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:10895:21)
+[1]     at TypeScriptParserMixin.parseMaybeAssign (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:9839:20)
+[1]     at /Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:10864:39
+[1]     at TypeScriptParserMixin.allowInAnd (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12495:16)
+[1]     at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:10864:17)
+[1]     at TypeScriptParserMixin.parseVar (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13460:91)
+[1]     at TypeScriptParserMixin.parseVarStatement (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13306:10)
+[1]     at TypeScriptParserMixin.parseVarStatement (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:9469:31)
+[1]     at TypeScriptParserMixin.parseStatementContent (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12927:23)
+[1]     at TypeScriptParserMixin.parseStatementContent (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:9569:18)
+[1]     at TypeScriptParserMixin.parseStatementLike (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12843:17)
+[1]     at TypeScriptParserMixin.parseModuleItem (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12820:17)
+[1]     at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13392:36)
+[1]     at TypeScriptParserMixin.parseBlockBody (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:13385:10)
+[1]     at TypeScriptParserMixin.parseProgram (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12698:10)
+    at TypeScriptParserMixin.parseTopLevel (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:12688:25)
+[1]     at TypeScriptParserMixin.parse (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:14568:25)
+[1]     at TypeScriptParserMixin.parse (/Users/zhiming_li/CodeBuddy/tools/client/node_modules/@babel/parser/lib/index.js:10183:18)
+[1] 
+[1] webpack compiled with 1 error and 1 warning
+[1] ERROR in src/components/tools/RegexTester.tsx:24:9
+[1] TS2451: Cannot redeclare block-scoped variable 'currentTheme'.
+[1]     22 |   ];
+[1]     23 |
+[1]   > 24 |   const currentTheme = getThemeColors(theme);
+[1]        |         ^^^^^^^^^^^^
+[1]     25 |
+[1]     26 |   useEffect(() => {
+[1]     27 |     const savedTheme = localStorage.getItem('json-formatter-theme');
+[1] 
+[1] ERROR in src/components/tools/RegexTester.tsx:80:9
+[1] TS2451: Cannot redeclare block-scoped variable 'currentTheme'.
+[1]     78 |   };
+[1]     79 |
+[1]   > 80 |   const currentTheme = getThemeColors(theme);
+[1]        |         ^^^^^^^^^^^^
+[1]     81 |
+[1]     82 |   return (
+[1]     83 |     <div style={{
+[1] 
+[1] Compiling...
+[1] Compiled with warnings.
+[1] 
+[1] [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] Search for the keywords to learn more about each warning.
+[1] To ignore, add // eslint-disable-next-line to the line before.
+[1] 
+[1] WARNING in [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] webpack compiled with 1 warning
+[1] No issues found.
+[1] Compiling...
+[1] Compiled with warnings.
+[1] 
+[1] [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] Search for the keywords to learn more about each warning.
+[1] To ignore, add // eslint-disable-next-line to the line before.
+[1] 
+[1] WARNING in [eslint] 
+[1] src/components/tools/MarkdownEditor.tsx
+[1]   Line 120:25:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 120:27:  Unnecessary escape character: \-  no-useless-escape
+[1]   Line 121:41:  Unnecessary escape character: \*  no-useless-escape
+[1]   Line 121:43:  Unnecessary escape character: \-  no-useless-escape
+[1] 
+[1] src/components/tools/UuidGenerator.tsx
+[1]   Line 42:38:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 42:44:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 47:13:  'timestamp' is assigned a value but never used                                              @typescript-eslint/no-unused-vars
+[1]   Line 48:13:  'random' is assigned a value but never used                                                 @typescript-eslint/no-unused-vars
+[1]   Line 55:23:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1]   Line 55:29:  Unexpected mix of '&' and '|'. Use parentheses to clarify the intended order of operations  no-mixed-operators
+[1] 
+[1] webpack compiled with 1 warning
+[1] No issues found.

@@ -2,24 +2,46 @@
   "name": "web-toolkit",
   "version": "1.0.0",
   "description": "一个功能强大的Web工具集，包含JSON格式化等实用工具",
-  "main": "server/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "nodemon server/index.js",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
+    "server": "node dist/index.js",
+    "server:dev": "nodemon --exec ts-node server/index.ts",
+    "server:build": "tsc",
     "client": "cd client && npm start",
-    "build": "cd client && npm run build",
-    "install-all": "npm install && cd client && npm install"
+    "client:build": "cd client && npm run build",
+    "build": "npm run server:build && npm run client:build",
+    "build:client": "cd client && npm run build",
+    "install-all": "npm install && cd client && npm install",
+    "test": "jest server/tests --config jest.config.js",
+    "test:client": "cd client && npm test",
+    "test:server": "jest server/tests --config jest.config.js"
   },
-  "keywords": ["web-tools", "json", "formatter", "utilities"],
+  "keywords": [
+    "web-tools",
+    "json",
+    "formatter",
+    "utilities"
+  ],
   "author": "Developer",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
     "cors": "^2.8.5",
+    "express": "^4.18.2",
     "helmet": "^7.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "concurrently": "^8.2.2"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^24.10.1",
+    "@types/supertest": "^6.0.3",
+    "concurrently": "^8.2.2",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^6.3.4",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
