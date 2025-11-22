@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+        .error {
+            border: 1px solid #dc3545;
+            color: #721c24;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 5px 0;
+            padding: 10px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>API 测试页面</h1>
+    
+    <div class="test-section">
+        <h3>JSON 格式化测试</h3>
+        <textarea id="jsonInput" placeholder='输入JSON，例如: {"name":"test","value":123}'>{"name":"张三","age":25,"hobbies":["读书","游泳"]}</textarea>
+        <button onclick="testJsonFormat()">测试格式化</button>
+        <button onclick="testJsonValidate()">测试验证</button>
+        <div id="formatResult" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Base64 编解码测试</h3>
+        <textarea id="base64Input" placeholder="输入要编码的文本">Hello World! 你好世界！</textarea>
+        <button onclick="testBase64Encode()">Base64编码</button>
+        <button onclick="testBase64Decode()">Base64解码</button>
+        <div id="base64Result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>URL 编解码测试</h3>
+        <textarea id="urlInput" placeholder="输入要编码的URL">https://example.com/search?q=测试&type=advanced</textarea>
+        <button onclick="testUrlEncode()">URL编码</button>
+        <button onclick="testUrlDecode()">URL解码</button>
+        <div id="urlResult" class="result"></div>
+    </div>
+
+    <script>
+        async function testJsonFormat() {
+            const input = document.getElementById('jsonInput').value;
+            const resultDiv = document.getElementById('formatResult');
+            
+            try {
+                const response = await fetch('/api/tools/json/format', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        json: input,
+                        indent: 2 
+                    }),
+                });
+                
+                const data = await response.json();
+                console.log('API响应:', data);
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `格式化成功!\n\n原始JSON:\n${input}\n\n格式化后:\n${data.formatted}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `格式化失败: ${data.error}`;
+                }
+            } catch (error) {
+                console.error('请求错误:', error);
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `请求错误: ${error.message}`;
+            }
+        }
+        
+        async function testJsonValidate() {
+            const input = document.getElementById('jsonInput').value;
+            const resultDiv = document.getElementById('formatResult');
+            
+            try {
+                const response = await fetch('/api/tools/json/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ json: input }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.valid) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = 'JSON格式正确 ✓';
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `JSON格式错误: ${data.error || data.details}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `验证错误: ${error.message}`;
+            }
+        }
+        
+        async function testBase64Encode() {
+            const input = document.getElementById('base64Input').value;
+            const resultDiv = document.getElementById('base64Result');
+            
+            try {
+                const response = await fetch('/api/tools/base64/encode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: input }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `Base64编码成功!\n\n原始文本:\n${input}\n\n编码后:\n${data.encoded}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `编码失败: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `请求错误: ${error.message}`;
+            }
+        }
+        
+        async function testBase64Decode() {
+            // 先编码一个字符串，然后解码
+            const input = "SGVsbG8gV29ybGQhIOS4lueVjOWtl+whIQ==";
+            const resultDiv = document.getElementById('base64Result');
+            
+            try {
+                const response = await fetch('/api/tools/base64/decode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ encoded: input }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `Base64解码成功!\n\nBase64字符串:\n${input}\n\n解码后:\n${data.decoded}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `解码失败: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `请求错误: ${error.message}`;
+            }
+        }
+        
+        async function testUrlEncode() {
+            const input = document.getElementById('urlInput').value;
+            const resultDiv = document.getElementById('urlResult');
+            
+            try {
+                const response = await fetch('/api/tools/url/encode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: input }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `URL编码成功!\n\n原始URL:\n${input}\n\n编码后:\n${data.encoded}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `编码失败: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `请求错误: ${error.message}`;
+            }
+        }
+        
+        async function testUrlDecode() {
+            const input = "https%3A%2F%2Fexample.com%2Fsearch%3Fq%3D%E6%B5%8B%E8%AF%95%26type%3Dadvanced";
+            const resultDiv = document.getElementById('urlResult');
+            
+            try {
+                const response = await fetch('/api/tools/url/decode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: input }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `URL解码成功!\n\n编码URL:\n${input}\n\n解码后:\n${data.decoded}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `解码失败: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `请求错误: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
