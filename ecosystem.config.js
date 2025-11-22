@@ -1,17 +1,17 @@
 module.exports = {
   apps: [{
     name: 'web-toolkit',
-    script: 'dist/index.js',
-    cwd: '/var/www/web-toolkit',
-    instances: 'max',
-    exec_mode: 'cluster',
+    script: '/root/tools/dist/index.js',
+    cwd: '/root/tools/',
+    instances: 1,
+    exec_mode: 'fork',
     env: {
       NODE_ENV: 'production',
       PORT: 3001
     },
-    error_file: '/var/www/web-toolkit/logs/err.log',
-    out_file: '/var/www/web-toolkit/logs/out.log',
-    log_file: '/var/www/web-toolkit/logs/combined.log',
+    error_file: '/root/tools/logs/err.log',
+    out_file: '/root/tools/logs/out.log',
+    log_file: '/root/tools/logs/combined.log',
     time: true,
     max_memory_restart: '1G',
     node_args: '--max-old-space-size=1024'
