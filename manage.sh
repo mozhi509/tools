@@ -221,9 +221,26 @@ start_prod() {
     # 启动后端服务 (使用PM2或直接启动)
     log_info "启动后端服务..."
     if command -v pm2 >/dev/null 2>&1; then
-        pm2 start ecosystem.config.js
-        log_info "使用PM2启动后端服务"
+        log_info "使用PM2启动后端服务..."
+        # 停止可能存在的同名进程
+        pm2 delete web-toolkit 2>/dev/null || true
+        sleep 2
+        
+        # 启动新进程
+        if pm2 start ecosystem.config.js; then
+            log_success "PM2启动成功"
+            # 等待启动
+            sleep 3
+            # 检查状态
+            pm2 status
+        else
+            log_error "PM2启动失败，尝试直接启动"
+            NODE_ENV=production nohup node dist/index.js > "$LOG_DIR/prod.log" 2>&1 &
+            echo $! > "$PID_FILE"
+            log_info "直接启动后端服务"
+        fi
     else
+        log_warning "PM2未安装，使用直接启动方式"
         NODE_ENV=production nohup node dist/index.js > "$LOG_DIR/prod.log" 2>&1 &
         echo $! > "$PID_FILE"
         log_info "直接启动后端服务"
