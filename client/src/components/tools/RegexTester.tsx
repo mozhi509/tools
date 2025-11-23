@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ToolNavigation from '../ToolNavigation';
-import { getThemeColors } from '../themes';
 
 const RegexTester: React.FC = () => {
   const [pattern, setPattern] = useState<string>('');
@@ -8,32 +7,17 @@ const RegexTester: React.FC = () => {
   const [testText, setTestText] = useState<string>('');
   const [matches, setMatches] = useState<RegExpMatchArray[]>([]);
   const [error, setError] = useState<string>('');
-  const [theme, setTheme] = useState<string>('vs-light');
 
   const commonPatterns = [
-    { name: '邮箱', pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$' },
-    { name: '手机号', pattern: '^1[3-9]\\d{9}$' },
-    { name: 'URL', pattern: 'https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)' },
-    { name: 'IP地址', pattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$' },
-    { name: '身份证', pattern: '^\\d{15}|\\d{18}|\\d{17}[Xx]$' },
-    { name: '中文', pattern: '[\\u4e00-\\u9fa5]+' },
-    { name: '数字', pattern: '\\d+' },
+    { name: '邮箱', pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' },
+    { name: '手机号', pattern: '^1[3-9]\d{9}$' },
+    { name: 'URL', pattern: 'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)' },
+    { name: 'IP地址', pattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$' },
+    { name: '身份证', pattern: '^\d{15}|\d{18}|\d{17}[Xx]$' },
+    { name: '中文', pattern: '[\u4e00-\u9fa5]+' },
+    { name: '数字', pattern: '\d+' },
     { name: '字母', pattern: '[a-zA-Z]+' },
   ];
-
-  const currentTheme = getThemeColors(theme);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
-
 
   const testRegex = () => {
     if (!pattern) {
@@ -82,36 +66,49 @@ const RegexTester: React.FC = () => {
       display: 'flex',
       flexDirection: 'column',
       height: '100vh',
-      backgroundColor: currentTheme.background,
-      color: currentTheme.foreground,
       fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     }}>
       <ToolNavigation 
-        theme={theme}
-        setTheme={setTheme}
-        currentTheme={currentTheme}
+        theme=""
+        setTheme={() => {}}
+        currentTheme={{
+          name: 'vs-light',
+          background: '#ffffff',
+          foreground: '#000000',
+          header: '#f3f3f3',
+          border: '#e1e1e1',
+          button: '#0078d4',
+          string: '#a31515',
+          number: '#098658',
+          boolean: '#0000ff',
+          key: '#0451a5',
+          bracket: '#000000',
+          comma: '#000000',
+          placeholder: '#6e6e6e',
+          buttonForeground: '#ffffff'
+        }}
       />
       
       <div style={{
         padding: '16px',
-        borderBottom: `1px solid ${currentTheme.border}`,
+        borderBottom: '1px solid #e1e1e1',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: currentTheme.header,
+        backgroundColor: '#f8f9fa',
       }}>
         <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 'normal' }}>
-          🔍 正则表达式测试器
+          🔍 正则表达式测试
         </h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={clearAll}
             style={{
-              backgroundColor: currentTheme.border,
-              color: currentTheme.foreground,
-              border: `1px solid ${currentTheme.border}`,
-              padding: '6px 12px',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
               borderRadius: '4px',
+              padding: '6px 12px',
               cursor: 'pointer',
               fontSize: '14px',
             }}
@@ -137,339 +134,329 @@ const RegexTester: React.FC = () => {
         }}>
           {/* 正则表达式输入 */}
           <div style={{
-            backgroundColor: currentTheme.background,
-            border: `1px solid ${currentTheme.border}`,
+            backgroundColor: 'white',
+            border: '1px solid #dee2e6',
             borderRadius: '8px',
-            overflow: 'hidden',
+            padding: '16px',
           }}>
             <div style={{
-              padding: '12px',
-              backgroundColor: currentTheme.header,
-              borderBottom: `1px solid ${currentTheme.border}`,
-              fontSize: '14px',
-              fontWeight: 'bold',
               display: 'flex',
-              alignItems: 'center',
               gap: '8px',
+              marginBottom: '12px',
+              alignItems: 'center',
             }}>
-              正则表达式
+              <input
+                type="text"
+                value={pattern}
+                onChange={(e) => setPattern(e.target.value)}
+                placeholder="输入正则表达式..."
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  border: '1px solid #ced4da',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  fontFamily: 'monospace',
+                }}
+              />
+              <select
+                value={flags}
+                onChange={(e) => setFlags(e.target.value)}
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ced4da',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                }}
+              >
+                <option value="">无标志</option>
+                <option value="g">全局 (g)</option>
+                <option value="i">忽略大小写 (i)</option>
+                <option value="m">多行 (m)</option>
+                <option value="gi">全局+忽略大小写</option>
+              </select>
+            </div>
+
+            {/* 常用模式 */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '8px' }}>
+                常用模式：
+              </div>
               <div style={{
-                display: 'flex',
-                gap: '4px',
-                marginLeft: 'auto',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gap: '8px',
               }}>
-                {['g', 'i', 'm', 's', 'u', 'y'].map(flag => (
-                  <label key={flag} style={{ display: 'flex', alignItems: 'center', gap: '2px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={flags.includes(flag)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFlags(flags + flag);
-                        } else {
-                          setFlags(flags.replace(flag, ''));
-                        }
-                      }}
-                    />
-                    <span style={{ fontSize: '12px' }}>{flag}</span>
-                  </label>
+                {commonPatterns.map((commonPattern, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setPattern(commonPattern.pattern)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '4px',
+                      backgroundColor: '#f8f9fa',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                    }}
+                    >
+                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                        {commonPattern.name}
+                      </div>
+                      <div style={{
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        color: '#6c757d',
+                        wordBreak: 'break-all',
+                      }}>
+                        {commonPattern.pattern}
+                      </div>
+                    </button>
                 ))}
               </div>
             </div>
-            <input
-              type="text"
-              value={pattern}
-              onChange={(e) => setPattern(e.target.value)}
-              placeholder="输入正则表达式..."
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: currentTheme.background,
-                color: currentTheme.foreground,
-                border: 'none',
-                outline: 'none',
-                fontSize: '14px',
-                fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-              }}
-            />
-            <div style={{
-              padding: '8px 12px',
-              backgroundColor: currentTheme.header,
-              borderTop: `1px solid ${currentTheme.border}`,
-              display: 'flex',
-              gap: '8px',
-            }}>
-              <button
-                onClick={testRegex}
-                disabled={!pattern || !testText}
-                style={{
-                  backgroundColor: pattern && testText ? currentTheme.button : currentTheme.border,
-                  color: currentTheme.buttonForeground || currentTheme.foreground,
-                  border: `1px solid ${currentTheme.border}`,
-                  padding: '6px 12px',
-                  borderRadius: '4px',
-                  cursor: pattern && testText ? 'pointer' : 'not-allowed',
-                  fontSize: '12px',
-                }}
-              >
-                测试
-              </button>
-              <button
-                onClick={() => copyToClipboard(pattern)}
-                disabled={!pattern}
-                style={{
-                  backgroundColor: currentTheme.button,
-                  color: currentTheme.buttonForeground || currentTheme.foreground,
-                  border: `1px solid ${currentTheme.border}`,
-                  padding: '6px 12px',
-                  borderRadius: '4px',
-                  cursor: pattern ? 'pointer' : 'not-allowed',
-                  fontSize: '12px',
-                }}
-              >
-                复制
-              </button>
-            </div>
           </div>
 
-          {/* 测试文本 */}
+          {/* 测试文本输入 */}
           <div style={{
-            flex: 1,
-            backgroundColor: currentTheme.background,
-            border: `1px solid ${currentTheme.border}`,
+            backgroundColor: 'white',
+            border: '1px solid #dee2e6',
             borderRadius: '8px',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
+            padding: '16px',
+            flex: 1,
           }}>
             <div style={{
-              padding: '12px',
-              backgroundColor: currentTheme.header,
-              borderBottom: `1px solid ${currentTheme.border}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
             }}>
-              <div style={{
-                display: 'flex',
-                gap: '8px',
-                flexWrap: 'wrap',
-              }}>
+              <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                测试文本：
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setTestText('Hello World! 123 email@test.com')}
+                  style={{
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  使用示例
+                </button>
                 <button
                   onClick={() => copyToClipboard(testText)}
                   disabled={!testText.trim()}
                   style={{
-                    backgroundColor: testText.trim() ? currentTheme.button : currentTheme.border,
-                    color: currentTheme.buttonForeground || currentTheme.foreground,
-                    border: `1px solid ${currentTheme.border}`,
-                    padding: '4px 10px',
+                    backgroundColor: testText.trim() ? '#28a745' : '#6c757d',
+                    color: 'white',
+                    border: 'none',
                     borderRadius: '4px',
+                    padding: '4px 8px',
                     cursor: testText.trim() ? 'pointer' : 'not-allowed',
-                    fontSize: '11px',
-                    transition: 'background-color 0.2s',
+                    fontSize: '12px',
                   }}
                 >
-                  复制
-                </button>
-                <button
-                  onClick={() => setTestText('')}
-                  disabled={!testText.trim()}
-                  style={{
-                    backgroundColor: currentTheme.border,
-                    color: currentTheme.foreground,
-                    border: `1px solid ${currentTheme.border}`,
-                    padding: '4px 10px',
-                    borderRadius: '4px',
-                    cursor: testText.trim() ? 'pointer' : 'not-allowed',
-                    fontSize: '11px',
-                    transition: 'background-color 0.2s',
-                  }}
-                >
-                  清空
+                  复制文本
                 </button>
               </div>
             </div>
             <textarea
               value={testText}
               onChange={(e) => setTestText(e.target.value)}
-              placeholder="输入要测试的文本..."
+              placeholder="在此输入要测试的文本..."
               style={{
-                flex: 1,
+                width: '100%',
+                height: '200px',
                 padding: '12px',
-                backgroundColor: currentTheme.background,
-                color: currentTheme.foreground,
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
+                border: '1px solid #ced4da',
+                borderRadius: '4px',
                 fontSize: '14px',
-                fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-                lineHeight: '1.5',
+                fontFamily: 'monospace',
+                resize: 'vertical',
+                outline: 'none',
               }}
             />
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '12px',
+            }}>
+              <button
+                onClick={testRegex}
+                style={{
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+              >
+                测试匹配
+              </button>
+              {error && (
+                <div style={{
+                  color: '#dc3545',
+                  fontSize: '12px',
+                  textAlign: 'right',
+                }}>
+                  {error}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* 右侧结果区域 */}
         <div style={{
           flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
+          backgroundColor: 'white',
+          border: '1px solid #dee2e6',
+          borderRadius: '8px',
+          padding: '16px',
+          overflow: 'auto',
         }}>
-          {/* 错误信息 */}
-          {error && (
-            <div style={{
-              padding: '12px',
-              backgroundColor: '#ffebee',
-              border: '1px solid #f44336',
-              borderRadius: '4px',
-              color: '#c62828',
-              fontSize: '14px',
-            }}>
-              错误: {error}
-            </div>
-          )}
-
-          {/* 匹配结果 */}
           <div style={{
-            flex: 1,
-            backgroundColor: currentTheme.background,
-            border: `1px solid ${currentTheme.border}`,
-            borderRadius: '8px',
-            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px',
           }}>
-            <div style={{
-              padding: '12px',
-              backgroundColor: currentTheme.header,
-              borderBottom: `1px solid ${currentTheme.border}`,
-              fontSize: '14px',
-              fontWeight: 'bold',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              匹配结果
-              <span style={{ fontSize: '12px', color: currentTheme.placeholder }}>
-                {matches.length} 个匹配
-              </span>
-            </div>
-            <div style={{
-              flex: 1,
-              overflow: 'auto',
-              padding: '12px',
-            }}>
-              {matches.length > 0 ? (
-                matches.map((match, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      padding: '8px',
-                      marginBottom: '8px',
-                      backgroundColor: currentTheme.header,
-                      border: `1px solid ${currentTheme.border}`,
-                      borderRadius: '4px',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ fontSize: '12px', color: currentTheme.placeholder, marginBottom: '4px' }}>
-                      匹配 #{index + 1}
-                    </div>
-                    <div style={{ color: currentTheme.string, marginBottom: '4px' }}>
-                      完整匹配: "{match[0]}"
-                    </div>
-                    <div style={{ fontSize: '12px' }}>
-                      位置: {match.index} - {(match.index || 0) + match[0].length}
-                    </div>
-                    {match.length > 1 && (
-                      <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                        捕获组:
-                        <div style={{ marginTop: '4px' }}>
-                          {match.slice(1).map((group, i) => (
-                            <span key={i} style={{ 
-                              display: 'block',
-                              marginBottom: '2px',
-                              color: group ? currentTheme.number : currentTheme.placeholder 
-                            }}>
-                              ${i + 1}: "{group || '空'}"
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'flex-start',
-                  height: '100%',
-                  color: currentTheme.placeholder,
-                  fontSize: '14px',
-                  padding: '16px',
-                }}>
-                  没有匹配结果
-                </div>
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#333' }}>
+              匹配结果 ({matches.length})
+            </h3>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {matches.length > 0 && (
+                <button
+                  onClick={() => copyToClipboard(matches.map(m => m[0]).join('\n'))}
+                  style={{
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  复制所有匹配
+                </button>
               )}
             </div>
           </div>
 
-          {/* 常用正则 */}
-          <div style={{
-            backgroundColor: currentTheme.background,
-            border: `1px solid ${currentTheme.border}`,
-            borderRadius: '8px',
-            overflow: 'hidden',
-          }}>
+          {error && (
             <div style={{
+              color: '#dc3545',
               padding: '12px',
-              backgroundColor: currentTheme.header,
-              borderBottom: `1px solid ${currentTheme.border}`,
+              backgroundColor: '#f8d7da',
+              border: '1px solid #f5c6cb',
+              borderRadius: '4px',
               fontSize: '14px',
-              fontWeight: 'bold',
+              textAlign: 'center',
             }}>
-              常用正则
+              {error}
             </div>
+          )}
+
+          {!error && matches.length === 0 && pattern && (
             <div style={{
-              padding: '8px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '4px',
+              color: '#6c757d',
+              textAlign: 'center',
+              padding: '20px',
+              fontSize: '14px',
             }}>
-              {commonPatterns.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => setPattern(item.pattern)}
+              没有找到匹配项
+            </div>
+          )}
+
+          {!error && matches.length > 0 && (
+            <div style={{ textAlign: 'left' }}>
+              {matches.map((match, index) => (
+                <div
+                  key={index}
                   style={{
-                    padding: '6px 8px',
-                    backgroundColor: currentTheme.background,
-                    border: `1px solid ${currentTheme.border}`,
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e9ecef',
                     borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    textAlign: 'left',
-                    transition: 'background-color 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = currentTheme.header;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = currentTheme.background;
+                    padding: '12px',
+                    marginBottom: '8px',
                   }}
                 >
-                  <div style={{ color: currentTheme.key, fontSize: '10px' }}>{item.name}</div>
-                  <div style={{ 
-                    color: currentTheme.placeholder, 
-                    fontSize: '9px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '8px',
                   }}>
-                    {item.pattern}
+                    <span style={{
+                      fontWeight: 'bold',
+                      color: '#007bff',
+                      fontSize: '12px',
+                    }}>
+                      匹配 #{index + 1}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(match[0])}
+                      style={{
+                        backgroundColor: '#17a2b8',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                      }}
+                    >
+                      复制
+                    </button>
                   </div>
-                </button>
+                  <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                    <div style={{ marginBottom: '4px' }}>
+                      <strong>匹配文本：</strong> {match[0]}
+                    </div>
+                    {match.length > 1 && (
+                      <div style={{ marginTop: '8px' }}>
+                        <strong>捕获组：</strong>
+                        {match.slice(1).map((group, groupIndex) => (
+                          <div
+                            key={groupIndex}
+                            style={{
+                              backgroundColor: '#e9ecef',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              marginTop: '4px',
+                              fontFamily: 'monospace',
+                              fontSize: '12px',
+                            }}
+                          >
+                            组 {groupIndex + 1}: {group || '(空)'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {match.index !== undefined && (
+                      <div style={{ marginTop: '8px', fontSize: '12px', color: '#6c757d' }}>
+                        位置: {match.index} - {match.index + match[0].length}
+                      </div>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

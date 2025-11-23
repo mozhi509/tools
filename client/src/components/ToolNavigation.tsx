@@ -149,6 +149,35 @@ const ToolNavigation: React.FC<ToolNavigationProps> = ({ theme, setTheme, curren
                   </option>
                 ))}
               </select>
+              
+              {/* 打赏按钮 */}
+              <button
+                onClick={() => navigate('/donate')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 10px',
+                  backgroundColor: location.pathname === '/donate' 
+                    ? currentTheme.button 
+                    : 'transparent',
+                  color: location.pathname === '/donate' 
+                    ? (currentTheme.buttonForeground || currentTheme.foreground)
+                    : currentTheme.placeholder,
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  transition: 'all 0.2s ease',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+                title="Buy me a coffee"
+              >
+                <span style={{ fontSize: '14px' }}>☕</span>
+                <span>Coffee</span>
+              </button>
             </div>
           </div>
         </div>

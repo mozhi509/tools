@@ -10,6 +10,7 @@ import JwtParser from './components/tools/JwtParser';
 import UuidGenerator from './components/tools/UuidGenerator';
 import MarkdownEditor from './components/tools/MarkdownEditor';
 import ColorConverter from './components/tools/ColorConverter';
+import DonatePageSimple from './components/DonatePageSimple';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/jwt" element={<JwtParser />} />
           <Route path="/uuid" element={<UuidGenerator />} />
           <Route path="/color" element={<ColorConverter />} />
+          <Route path="/donate" element={<DonatePageSimple />} />
         </Routes>
       </div>
     </Router>

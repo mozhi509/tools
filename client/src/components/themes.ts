@@ -12,10 +12,10 @@ export interface ThemeColors {
   bracket: string;
   comma: string;
   placeholder: string;
-  buttonForeground: string;
+  buttonForeground?: string;
 }
 
-export const themes: Record<string, ThemeColors> = {
+export const themes: { [key: string]: ThemeColors } = {
   'vs-dark': {
     name: 'VS Code Dark',
     background: '#1e1e1e',
@@ -133,4 +133,3 @@ export const themes: Record<string, ThemeColors> = {
 export const getThemeColors = (themeName: string): ThemeColors => {
   return themes[themeName] || themes['vs-light'];
 };
-
