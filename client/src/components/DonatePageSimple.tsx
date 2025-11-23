@@ -158,6 +158,28 @@ const DonatePageSimple: React.FC = () => {
                       border: '1px solid #D4A574'
                     }}
                   />
+                  
+                  {/* 简洁文字说明 */}
+                  <div style={{
+                    textAlign: 'center',
+                    marginTop: '15px',
+                    padding: '10px 8px',
+                    background: 'linear-gradient(135deg, #F5E6D3 0%, #E8D5C4 100%)',
+                    borderRadius: '8px',
+                    border: '1px solid #D4A574'
+                  }}>
+                    <div style={{
+                      fontSize: '13px',
+                      color: '#6F4E37',
+                      fontWeight: '500',
+                      lineHeight: '1.4'
+                    }}>
+                      {method.id === 'wechat' 
+                        ? '微信扫码，香浓一杯'
+                        : '支付宝，甘醇心意'
+                      }
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
