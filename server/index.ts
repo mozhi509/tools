@@ -3,6 +3,9 @@ import cors from 'cors';
 // import helmet from 'helmet';
 import path from 'path';
 import toolsRouter from './routes/tools';
+import videoRouter from './routes/video';
+import shareRouter from './routes/share';
+import { connectRedis, disconnectRedis } from './redis';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,6 +22,8 @@ if (process.env.NODE_ENV === 'production') {
 
 // API 路由
 app.use('/api/tools', toolsRouter);
+app.use('/api/video', videoRouter);
+app.use('/api/share', shareRouter);
 
 // 健康检查
 app.get('/api/health', (req: Request, res: Response) => {
@@ -38,6 +43,32 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: '服务器内部错误' });
 });
 
-app.listen(PORT, () => {
-  console.log(`服务器运行在端口 ${PORT}`);
+// 启动服务器
+const startServer = async () => {
+  try {
+    // 连接 Redis
+    await connectRedis();
+    
+    app.listen(PORT, () => {
+      console.log(`服务器运行在端口 ${PORT}`);
+    });
+  } catch (error) {
+    console.error('启动服务器失败:', error);
+    process.exit(1);
+  }
+};
+
+// 优雅关闭
+process.on('SIGINT', async () => {
+  console.log('正在关闭服务器...');
+  await disconnectRedis();
+  process.exit(0);
 });
+
+process.on('SIGTERM', async () => {
+  console.log('正在关闭服务器...');
+  await disconnectRedis();
+  process.exit(0);
+});
+
+startServer();

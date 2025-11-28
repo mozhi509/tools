@@ -10,23 +10,125 @@ export interface Tool {
   description: string;
 }
 
-export const tools: Tool[] = [
-  { id: 'json', name: 'JSON', icon: '{ }', path: '/json-formatter', description: 'JSON格式化工具' },
-  { id: 'base64', name: 'Base64', icon: '🔤', path: '/base64', description: 'Base64编解码器' },
-  { id: 'regex', name: '正则', icon: '🔍', path: '/regex', description: '正则表达式测试' },
-  { id: 'timestamp', name: '时间戳', icon: '🕐', path: '/timestamp', description: '时间戳转换器' },
-  { id: 'url', name: 'URL', icon: '🔗', path: '/url', description: 'URL参数解析' },
-  { id: 'markdown', name: 'Markdown', icon: '📝', path: '/markdown', description: 'Markdown编辑器' },
-  { id: 'jwt', name: 'JWT', icon: '🔐', path: '/jwt', description: 'JWT Token解析' },
-  { id: 'uuid', name: 'UUID', icon: '🆔', path: '/uuid', description: 'UUID生成器' },
-  { id: 'color', name: '颜色', icon: '🎨', path: '/color', description: '颜色转换器' },
+export interface ToolCategory {
+  id: string;
+  name: string;
+  icon: string;
+  tools: Tool[];
+}
+
+export const toolCategories: ToolCategory[] = [
+  {
+    id: 'text',
+    name: '文本处理',
+    icon: '📄',
+    tools: [
+      { id: 'json', name: 'JSON', icon: '{ }', path: '/json-formatter', description: 'JSON格式化工具' },
+      { id: 'base64', name: 'Base64', icon: '🔤', path: '/base64', description: 'Base64编解码器' },
+      { id: 'markdown', name: 'Markdown', icon: '📝', path: '/markdown', description: 'Markdown编辑器' },
+      { id: 'image', name: '图片编辑', icon: '🖼️', path: '/image-editor', description: '在线图片编辑器' },
+      { id: 'video', name: '视频剪辑', icon: '🎬', path: '/video-editor', description: '在线视频剪辑器' },
+    ]
+  },
+  {
+    id: 'validation',
+    name: '验证测试',
+    icon: '✅',
+    tools: [
+      { id: 'regex', name: '正则', icon: '🔍', path: '/regex', description: '正则表达式测试' },
+      { id: 'jwt', name: 'JWT', icon: '🔐', path: '/jwt', description: 'JWT Token解析' },
+    ]
+  },
+  {
+    id: 'converter',
+    name: '转换工具',
+    icon: '🔄',
+    tools: [
+      { id: 'timestamp', name: '时间戳', icon: '🕐', path: '/timestamp', description: '时间戳转换器' },
+      { id: 'url', name: 'URL', icon: '🔗', path: '/url', description: 'URL参数解析' },
+      { id: 'color', name: '颜色', icon: '🎨', path: '/color', description: '颜色转换器' },
+    ]
+  },
+  {
+    id: 'generator',
+    name: '生成器',
+    icon: '🎲',
+    tools: [
+      { id: 'uuid', name: 'UUID', icon: '🆔', path: '/uuid', description: 'UUID生成器' },
+    ]
+  }
 ];
+
+// 兼容性：保持原有的tools数组
+export const tools: Tool[] = toolCategories.flatMap(category => category.tools);
 
 interface ToolNavigationProps {
   theme: string;
   setTheme: (theme: string) => void;
   currentTheme: ThemeColors;
 }
+
+interface CategorySectionProps {
+  category: ToolCategory;
+  currentTheme: ThemeColors;
+  location: any;
+}
+
+const CategorySection: React.FC<CategorySectionProps> = ({ category, currentTheme, location }) => {
+  const navigate = useNavigate();
+
+  // 判断是否为激活状态，支持根路径
+  const isActive = (toolPath: string) => {
+    if (location.pathname === toolPath) {
+      return true;
+    }
+    // 根路径 / 应该高亮 JSON 工具
+    if (location.pathname === '/' && toolPath === '/json-formatter') {
+      return true;
+    }
+    return false;
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2px',
+      flexShrink: 0,
+    }}>
+      {category.tools.map((tool) => (
+        <button
+          key={tool.id}
+          onClick={() => navigate(tool.path)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '6px 10px',
+            backgroundColor: isActive(tool.path)
+              ? currentTheme.button 
+              : 'transparent',
+            color: isActive(tool.path)
+              ? (currentTheme.buttonForeground || currentTheme.foreground)
+              : currentTheme.placeholder,
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            transition: 'all 0.2s ease',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+          title={tool.description}
+        >
+          <span style={{ fontSize: '14px' }}>{tool.icon}</span>
+          <span style={{ fontSize: '14px' }}>{tool.name}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const ToolNavigation: React.FC<ToolNavigationProps> = ({ theme, setTheme, currentTheme }) => {
   const location = useLocation();
@@ -56,7 +158,7 @@ const ToolNavigation: React.FC<ToolNavigationProps> = ({ theme, setTheme, curren
             paddingRight: '16px',
             borderRight: `1px solid ${currentTheme.border}`,
           }}>
-            <span style={{ fontSize: '18px', fontWeight: 'bold', color: currentTheme.button }}>
+            <span style={{ fontSize: '14px', fontWeight: 'bold', color: currentTheme.button }}>
               🔧
             </span>
             <span style={{ 
@@ -79,41 +181,42 @@ const ToolNavigation: React.FC<ToolNavigationProps> = ({ theme, setTheme, curren
             {/* 工具导航 */}
             <div style={{
               display: 'flex',
-              gap: '4px',
+              gap: '2px',
               alignItems: 'center',
-              overflow: 'auto',
+              overflowX: 'auto',
+              overflowY: 'hidden',
               flex: 1,
+              // 隐藏滚动条
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
             }}>
-              {tools.map((tool) => (
-                <button
-                  key={tool.id}
-                  onClick={() => navigate(tool.path)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '6px 10px',
-                    backgroundColor: location.pathname === tool.path 
-                      ? currentTheme.button 
-                      : 'transparent',
-                    color: location.pathname === tool.path 
-                      ? (currentTheme.buttonForeground || currentTheme.foreground)
-                      : currentTheme.placeholder,
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    transition: 'all 0.2s ease',
-                    textDecoration: 'none',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                  title={tool.description}
-                >
-                  <span style={{ fontSize: '14px' }}>{tool.icon}</span>
-                  <span>{tool.name}</span>
-                </button>
-              ))}
+              <style>
+                {`
+                  .tools-nav::-webkit-scrollbar {
+                    display: none;
+                  }
+                  .tools-nav::-moz-scrollbar {
+                    display: none;
+                  }
+                  .tools-nav::-ms-scrollbar {
+                    display: none;
+                  }
+                `}
+              </style>
+              <div className="tools-nav" style={{
+                display: 'flex',
+                gap: '2px',
+                alignItems: 'center',
+              }}>
+                {toolCategories.map((category) => (
+                  <CategorySection
+                    key={category.id}
+                    category={category}
+                    currentTheme={currentTheme}
+                    location={location}
+                  />
+                ))}
+              </div>
             </div>
             
             {/* 主题选择器 */}

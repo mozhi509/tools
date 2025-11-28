@@ -1,6 +1,26 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: web-toolkit-redis
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - web-toolkit-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   web-toolkit:
     build: .
     container_name: web-toolkit
@@ -9,8 +29,15 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_DB=${REDIS_DB:-0}
     volumes:
       - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - web-toolkit-network
@@ -36,4 +63,7 @@ networks:
     driver: bridge
 
 volumes:
+  redis_data:
+    driver: local
   logs:
+    driver: local

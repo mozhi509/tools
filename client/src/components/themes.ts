@@ -127,6 +127,22 @@ export const themes: { [key: string]: ThemeColors } = {
     comma: '#ffffff',
     placeholder: '#ffffff',
     buttonForeground: '#000000'
+  },
+  'facebook': {
+    name: 'Facebook',
+    background: '#ffffff',
+    foreground: '#1c1e21',
+    header: '#f0f2f5',
+    border: '#dddfe2',
+    button: '#1877f2',
+    string: '#0366d6',
+    number: '#0550ae',
+    boolean: '#1877f2',
+    key: '#65676b',
+    bracket: '#1c1e21',
+    comma: '#606770',
+    placeholder: '#8a8d91',
+    buttonForeground: '#ffffff'
   }
 };
 

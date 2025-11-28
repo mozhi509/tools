@@ -22,11 +22,13 @@ LOG_DIR="$PROJECT_DIR/logs"
 BACKEND_PORT=3001
 FRONTEND_PORT=3000
 NGINX_PORT=80
+REDIS_PORT=6379
 
 # 进程名称
 BACKEND_PROCESS="node"
 FRONTEND_PROCESS="node"
 NGINX_PROCESS="nginx"
+REDIS_PROCESS="redis"
 
 # 日志函数
 log_info() {
@@ -185,6 +187,12 @@ start_prod() {
     
     ensure_dirs
     
+    # 加载环境变量
+    if [ -f ".env" ]; then
+        log_info "加载环境变量..."
+        export $(grep -v '^#' .env | xargs)
+    fi
+    
     # 构建 TypeScript 后端和 React 前端
     if [ ! -d "dist" ] || [ ! -d "client/build" ]; then
         log_info "构建项目..."
@@ -192,6 +200,18 @@ start_prod() {
     fi
     
     # 检查端口是否被占用
+    if check_port $REDIS_PORT; then
+        log_warning "Redis端口 $REDIS_PORT 已被占用:"
+        get_port_process $REDIS_PORT
+        read -p "是否停止占用进程? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            kill_port_process $REDIS_PORT
+        else
+            log_warning "跳过Redis服务启动"
+        fi
+    fi
+    
     if check_port $BACKEND_PORT; then
         log_warning "后端端口 $BACKEND_PORT 已被占用:"
         get_port_process $BACKEND_PORT
@@ -215,6 +235,26 @@ start_prod() {
         else
             log_error "无法启动Nginx，端口被占用"
             return 1
+        fi
+    fi
+    
+    # 启动Redis服务（如果可用）
+    if ! check_port $REDIS_PORT; then
+        if command -v redis-server >/dev/null 2>&1; then
+            log_info "启动Redis服务..."
+            if [ -f "redis.conf" ]; then
+                nohup redis-server redis.conf > "$LOG_DIR/redis.log" 2>&1 &
+            else
+                nohup redis-server --port $REDIS_PORT --daemonize yes > "$LOG_DIR/redis.log" 2>&1 &
+            fi
+            sleep 2
+            if check_port $REDIS_PORT; then
+                log_success "Redis服务启动成功"
+            else
+                log_warning "Redis服务启动失败，将继续启动后端服务"
+            fi
+        else
+            log_info "Redis未安装，跳过Redis服务"
         fi
     fi
     
@@ -259,14 +299,17 @@ start_prod() {
             log_success "生产环境启动成功!"
             echo "   Web服务:  http://localhost:$NGINX_PORT"
             echo "   后端API:  http://localhost:$BACKEND_PORT"
+            echo "   Redis:    redis://localhost:$REDIS_PORT"
             echo "   日志文件: $LOG_DIR/"
         else
             log_warning "Nginx启动失败，但后端服务可用"
             echo "   后端API: http://localhost:$BACKEND_PORT"
+            echo "   Redis:   redis://localhost:$REDIS_PORT"
         fi
     else
         log_warning "Nginx未配置或未安装，仅启动后端服务"
         echo "   后端API: http://localhost:$BACKEND_PORT"
+        echo "   Redis:   redis://localhost:$REDIS_PORT"
         echo "   可以直接访问 client/build/index.html"
     fi
 }
@@ -296,6 +339,7 @@ stop_services() {
     fi
     
     # 停止占用相关端口的进程
+    kill_port_process $REDIS_PORT
     kill_port_process $BACKEND_PORT
     kill_port_process $FRONTEND_PORT
     kill_port_process $NGINX_PORT
@@ -330,7 +374,7 @@ check_status() {
     # 检查端口状态
     echo ""
     echo "端口状态:"
-    for port in $BACKEND_PORT $FRONTEND_PORT $NGINX_PORT; do
+    for port in $REDIS_PORT $BACKEND_PORT $FRONTEND_PORT $NGINX_PORT; do
         if check_port $port; then
             echo -e "  端口 $port: ${GREEN}运行中${NC}"
             get_port_process $port | sed 's/^/    /'
@@ -338,6 +382,29 @@ check_status() {
             echo -e "  端口 $port: ${RED}未运行${NC}"
         fi
     done
+    
+    # 检查Redis状态详情
+    echo ""
+    echo "Redis状态:"
+    if check_port $REDIS_PORT; then
+        if command -v redis-cli >/dev/null 2>&1; then
+            if redis-cli -p $REDIS_PORT ping >/dev/null 2>&1; then
+                local redis_info=$(redis-cli -p $REDIS_PORT info server 2>/dev/null | head -5)
+                echo -e "  Redis: ${GREEN}运行中${NC}"
+                echo "  Redis版本: $(redis-cli -p $REDIS_PORT info server 2>/dev/null | grep redis_version | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')"
+                local used_memory=$(redis-cli -p $REDIS_PORT info memory 2>/dev/null | grep used_memory_human | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
+                echo "  内存使用: ${used_memory}"
+                local connected_clients=$(redis-cli -p $REDIS_PORT info clients 2>/dev/null | grep connected_clients | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
+                echo "  连接数: ${connected_clients}"
+            else
+                echo -e "  Redis: ${RED}连接失败${NC}"
+            fi
+        else
+            echo -e "  Redis: ${YELLOW}运行中但redis-cli未安装${NC}"
+        fi
+    else
+        echo -e "  Redis: ${RED}未运行${NC}"
+    fi
     
     # 检查PM2状态
     if command -v pm2 >/dev/null 2>&1; then
@@ -384,6 +451,9 @@ show_logs() {
         "prod")
             log_file="$LOG_DIR/prod.log"
             ;;
+        "redis")
+            log_file="$LOG_DIR/redis.log"
+            ;;
         "error")
             log_file="$LOG_DIR/err.log"
             ;;
@@ -392,7 +462,7 @@ show_logs() {
             ;;
         *)
             log_error "未知的服务类型: $service"
-            echo "可用选项: dev, prod, error, out"
+            echo "可用选项: dev, prod, redis, error, out"
             return 1
             ;;
     esac
@@ -410,28 +480,34 @@ show_logs() {
 
 # 显示帮助信息
 show_help() {
-    echo "Web工具集 服务管理脚本 (TypeScript版本)"
+    echo "Web工具集 服务管理脚本 (TypeScript版本 + Redis支持)"
     echo ""
     echo "用法: $0 <命令> [选项]"
     echo ""
     echo "命令:"
     echo "  start-dev     启动开发环境"
-    echo "  start-prod    启动生产环境"
+    echo "  start-prod    启动生产环境 (包含Redis)"
     echo "  stop          停止所有服务"
     echo "  restart-dev   重启开发环境"
     echo "  restart-prod  重启生产环境"
     echo "  status        查看服务状态"
-    echo "  logs [type]   查看日志 (dev|prod|error|out)"
+    echo "  logs [type]   查看日志 (dev|prod|redis|error|out)"
     echo "  build         构建项目 (TypeScript编译 + React构建)"
     echo "  help          显示此帮助信息"
     echo ""
+    echo "Redis相关环境变量:"
+    echo "  REDIS_HOST     Redis服务器地址 (默认: localhost)"
+    echo "  REDIS_PORT     Redis端口 (默认: 6379)"
+    echo "  REDIS_PASSWORD Redis密码 (默认: 空)"
+    echo "  REDIS_DB       Redis数据库索引 (默认: 0)"
+    echo ""
     echo "示例:"
     echo "  $0 start-dev      # 启动开发环境"
-    echo "  $0 start-prod     # 启动生产环境"
+    echo "  $0 start-prod     # 启动生产环境 (含Redis)"
     echo "  $0 build          # 构建项目"
     echo "  $0 restart-prod   # 重启生产环境"
     echo "  $0 status         # 查看服务状态"
-    echo "  $0 logs prod      # 查看生产环境日志"
+    echo "  $0 logs redis     # 查看Redis日志"
     echo ""
 }
 
