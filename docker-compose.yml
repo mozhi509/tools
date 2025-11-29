@@ -7,16 +7,27 @@ services:
     ports:
       - "6379:6379"
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=}
     volumes:
       - redis_data:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
-    command: redis-server /usr/local/etc/redis/redis.conf
+      - ./redis-prod.conf:/usr/local/etc/redis/redis.conf
+    command: >
+      sh -c "if [ -n \"$$REDIS_PASSWORD\" ]; then
+        echo \"requirepass $$REDIS_PASSWORD\" >> /usr/local/etc/redis/redis.conf &&
+        redis-server /usr/local/etc/redis/redis.conf;
+      else
+        redis-server /usr/local/etc/redis/redis.conf;
+      fi"
     restart: unless-stopped
     networks:
       - web-toolkit-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: >
+        sh -c "if [ -n \"$$REDIS_PASSWORD\" ]; then
+          redis-cli -a $$REDIS_PASSWORD ping;
+        else
+          redis-cli ping;
+        fi"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,10 +42,13 @@ services:
       - PORT=3001
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=}
       - REDIS_DB=${REDIS_DB:-0}
+      - MAX_MEMORY_RESTART=${MAX_MEMORY_RESTART:-1G}
+      - NODE_MAX_OLD_SPACE_SIZE=${NODE_MAX_OLD_SPACE_SIZE:-1024}
     volumes:
       - ./logs:/app/logs
+      - ./uploads:/app/uploads
     depends_on:
       redis:
         condition: service_healthy

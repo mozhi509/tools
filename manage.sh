@@ -187,11 +187,31 @@ start_prod() {
     
     ensure_dirs
     
-    # 加载环境变量
-    if [ -f ".env" ]; then
-        log_info "加载环境变量..."
-        export $(grep -v '^#' .env | xargs)
+    # 加载环境变量（优先使用 .env.prod）
+    local env_file=".env.prod"
+    if [ ! -f "$env_file" ]; then
+        env_file=".env"
     fi
+    
+    if [ -f "$env_file" ]; then
+        log_info "加载环境变量从 $env_file..."
+        export $(grep -v '^#' "$env_file" | xargs)
+    fi
+    
+    # 检查必要的环境变量
+    if [ -z "$REDIS_PASSWORD" ]; then
+        log_warning "REDIS_PASSWORD 未设置，使用默认值"
+        export REDIS_PASSWORD="W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE="
+    fi
+    
+    log_info "生产环境配置："
+    echo "  NODE_ENV: ${NODE_ENV:-production}"
+    echo "  PORT: ${PORT:-3001}"
+    echo "  REDIS_HOST: ${REDIS_HOST:-redis}"
+    echo "  REDIS_PORT: ${REDIS_PORT:-6379}"
+    echo "  REDIS_DB: ${REDIS_DB:-0}"
+    echo "  MAX_MEMORY_RESTART: ${MAX_MEMORY_RESTART:-1G}"
+    echo "  NODE_MAX_OLD_SPACE_SIZE: ${NODE_MAX_OLD_SPACE_SIZE:-1024}"
     
     # 构建 TypeScript 后端和 React 前端
     if [ ! -d "dist" ] || [ ! -d "client/build" ]; then
@@ -241,21 +261,52 @@ start_prod() {
     # 启动Redis服务（如果可用）
     if ! check_port $REDIS_PORT; then
         if command -v redis-server >/dev/null 2>&1; then
-            log_info "启动Redis服务..."
-            if [ -f "redis.conf" ]; then
-                nohup redis-server redis.conf > "$LOG_DIR/redis.log" 2>&1 &
-            else
-                nohup redis-server --port $REDIS_PORT --daemonize yes > "$LOG_DIR/redis.log" 2>&1 &
-            fi
-            sleep 2
+            log_info "启动Redis服务（带密码认证）..."
+            # 创建带密码的Redis配置
+            cat > "$LOG_DIR/redis-prod.conf" << EOF
+bind 127.0.0.1
+port $REDIS_PORT
+daemonize yes
+pidfile $LOG_DIR/redis_6379.pid
+logfile $LOG_DIR/redis.log
+dbfilename dump.rdb
+dir $LOG_DIR/
+requirepass $REDIS_PASSWORD
+save 900 1
+save 300 10
+save 60 10000
+appendonly yes
+appendfilename appendonly.aof
+appendfsync everysec
+maxmemory 256mb
+maxmemory-policy allkeys-lru
+EOF
+            
+            nohup redis-server "$LOG_DIR/redis-prod.conf" > "$LOG_DIR/redis-startup.log" 2>&1 &
+            sleep 3
             if check_port $REDIS_PORT; then
-                log_success "Redis服务启动成功"
+                # 验证密码认证
+                if redis-cli -h 127.0.0.1 -p $REDIS_PORT -a "$REDIS_PASSWORD" ping >/dev/null 2>&1; then
+                    log_success "Redis服务启动成功，密码认证已启用"
+                else
+                    log_error "Redis服务启动但密码认证失败"
+                    return 1
+                fi
             else
-                log_warning "Redis服务启动失败，将继续启动后端服务"
+                log_error "Redis服务启动失败"
+                return 1
             fi
         else
-            log_info "Redis未安装，跳过Redis服务"
+            log_error "Redis未安装，无法启动生产环境"
+            return 1
         fi
+    else
+        # 如果Redis已运行，检查密码认证
+        if ! redis-cli -h 127.0.0.1 -p $REDIS_PORT -a "$REDIS_PASSWORD" ping >/dev/null 2>&1; then
+            log_error "Redis服务已运行但密码认证失败，请检查配置"
+            return 1
+        fi
+        log_info "Redis服务已运行且密码认证正常"
     fi
     
     # 启动后端服务 (使用PM2或直接启动)
