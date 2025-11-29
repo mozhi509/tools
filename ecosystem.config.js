@@ -21,7 +21,9 @@ module.exports = {
       REDIS_PASSWORD: 'W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=',
       REDIS_DB: 0,
       MAX_MEMORY_RESTART: '1G',
-      NODE_MAX_OLD_SPACE_SIZE: 1024
+      NODE_MAX_OLD_SPACE_SIZE: 1024,
+      DOMAIN: process.env.DOMAIN || 'yourdomain.com',
+      HTTPS_ENABLED: process.env.HTTPS_ENABLED || 'false'
     },
     env_staging: {
       NODE_ENV: 'staging',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Copy, X, Share2 } from 'lucide-react';
+import { copyToClipboard, copyWithFeedback } from '../../utils/clipboard';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
 
@@ -285,13 +286,17 @@ const JsonFormatter: React.FC = () => {
   };
 
   const copyToClipboard = async (text: string): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000); // 2秒后重置状态
-    } catch (error) {
-      alert('复制失败');
-    }
+    await copyWithFeedback(
+      text,
+      () => {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      },
+      (error) => {
+        console.error('复制失败:', error);
+        alert(error);
+      }
+    );
   };
 
   const shareJson = async () => {

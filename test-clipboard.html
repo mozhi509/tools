@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复制功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .test-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>复制功能测试页面</h1>
+        <p>测试在不同环境下的复制功能是否正常工作</p>
+        
+        <div class="test-area">
+            <h3>环境信息</h3>
+            <p>当前页面协议: <span id="protocol"></span></p>
+            <p>是否安全上下文: <span id="secure"></span></p>
+            <p>支持 Clipboard API: <span id="clipboard-api"></span></p>
+            <p>用户代理: <span id="user-agent"></span></p>
+        </div>
+
+        <div class="test-area">
+            <h3>复制测试</h3>
+            <p>测试文本: <code>https://mydomain.com/share/test123</code></p>
+            <button onclick="testModernCopy()">使用现代 Clipboard API</button>
+            <button onclick="testFallbackCopy()">使用传统方法</button>
+            <button onclick="testUniversalCopy()">使用通用方法</button>
+            <div id="result"></div>
+        </div>
+
+        <div class="test-area">
+            <h3>生产环境模拟测试</h3>
+            <p>模拟生产环境的分享链接复制:</p>
+            <button onclick="testProductionCopy()">测试生产分享链接复制</button>
+            <div id="production-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 环境信息
+        document.getElementById('protocol').textContent = window.location.protocol;
+        document.getElementById('secure').textContent = window.isSecureContext ? '是' : '否';
+        document.getElementById('clipboard-api').textContent = (navigator.clipboard !== undefined) ? '是' : '否';
+        document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 50) + '...';
+
+        // 现代复制方法
+        async function testModernCopy() {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText('https://mydomain.com/share/test123');
+                    showResult('现代 Clipboard API 复制成功！', 'success');
+                } else {
+                    throw new Error('不支持现代 Clipboard API 或不在安全上下文中');
+                }
+            } catch (error) {
+                showResult('现代 Clipboard API 失败: ' + error.message, 'error');
+            }
+        }
+
+        // 传统复制方法
+        function testFallbackCopy() {
+            try {
+                fallbackCopyToClipboard('https://mydomain.com/share/test123');
+                showResult('传统复制方法成功！', 'success');
+            } catch (error) {
+                showResult('传统复制方法失败: ' + error.message, 'error');
+            }
+        }
+
+        // 通用复制方法
+        async function testUniversalCopy() {
+            try {
+                const success = await copyToClipboard('https://mydomain.com/share/test123');
+                if (success) {
+                    showResult('通用复制方法成功！', 'success');
+                } else {
+                    showResult('通用复制方法失败', 'error');
+                }
+            } catch (error) {
+                showResult('通用复制方法出错: ' + error.message, 'error');
+            }
+        }
+
+        // 生产环境模拟测试
+        async function testProductionCopy() {
+            try {
+                // 模拟 API 调用
+                const shareUrl = 'https://mydomain.com/share/mijxn8ee'; // 从之前的测试获取
+                const success = await copyToClipboard(shareUrl);
+                
+                if (success) {
+                    showResult(`生产分享链接复制成功: ${shareUrl}`, 'success');
+                } else {
+                    showResult('生产分享链接复制失败', 'error');
+                }
+            } catch (error) {
+                showResult('生产环境复制测试失败: ' + error.message, 'error');
+            }
+        }
+
+        // 传统复制方法实现
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            textArea.style.width = '2em';
+            textArea.style.height = '2em';
+            textArea.style.padding = '0';
+            textArea.style.border = 'none';
+            textArea.style.outline = 'none';
+            textArea.style.boxShadow = 'none';
+            textArea.style.background = 'transparent';
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (!successful) {
+                throw new Error('复制命令执行失败');
+            }
+            return true;
+        }
+
+        // 通用复制方法实现
+        async function copyToClipboard(text) {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } else {
+                    fallbackCopyToClipboard(text);
+                    return true;
+                }
+            } catch (error) {
+                try {
+                    fallbackCopyToClipboard(text);
+                    return true;
+                } catch (fallbackError) {
+                    return false;
+                }
+            }
+        }
+
+        // 显示结果
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            
+            // 3秒后清除结果
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

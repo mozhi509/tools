@@ -46,6 +46,8 @@ services:
       - REDIS_DB=${REDIS_DB:-0}
       - MAX_MEMORY_RESTART=${MAX_MEMORY_RESTART:-1G}
       - NODE_MAX_OLD_SPACE_SIZE=${NODE_MAX_OLD_SPACE_SIZE:-1024}
+      - DOMAIN=${DOMAIN:-yourdomain.com}
+      - HTTPS_ENABLED=${HTTPS_ENABLED:-false}
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads

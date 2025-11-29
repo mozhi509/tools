@@ -25,8 +25,11 @@ router.post('/create', async (req, res) => {
       type: 'json-formatter'
     }));
 
-    // 使用路径参数格式
-    const shareUrl = `http://localhost:3000/share/${shareId}`;
+    // 动态生成分享链接，支持生产和开发环境
+    const protocol = process.env.HTTPS_ENABLED === 'true' ? 'https' : 'http';
+    const domain = process.env.DOMAIN || 'localhost:3000';
+    const shareUrl = `${protocol}://${domain}/share/${shareId}`;
+    
     res.json({
       success: true,
       shareId,
