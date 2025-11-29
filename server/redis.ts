@@ -2,7 +2,14 @@ import { createClient } from 'redis';
 
 // 构建Redis连接配置
 const getRedisConfig = () => {
-  const host = process.env.REDIS_HOST || '127.0.0.1'; // 明确使用 IPv4 地址
+  // 强制使用 IPv4 地址，避免 IPv6 解析问题
+  let host = process.env.REDIS_HOST || '127.0.0.1';
+  
+  // 确保 host 是 IPv4 格式
+  if (host === 'localhost') {
+    host = '127.0.0.1';
+  }
+  
   const port = parseInt(process.env.REDIS_PORT || '6379', 10);
   const password = process.env.REDIS_PASSWORD;
   const db = parseInt(process.env.REDIS_DB || '0', 10);
@@ -13,6 +20,7 @@ const getRedisConfig = () => {
       port,
       connectTimeout: 10000, // 10秒连接超时
       lazyConnect: true, // 延迟连接
+      family: 4, // 强制使用 IPv4
     },
     database: db,
   };
