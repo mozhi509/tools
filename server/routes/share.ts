@@ -36,10 +36,18 @@ router.post('/create', async (req, res) => {
       shareUrl: shareUrl
     });
   } catch (error: any) {
-    console.error('创建分享失败:', error);
-    console.error('错误堆栈:', error.stack);
-    console.error('请求体:', req.body);
-    res.status(500).json({ error: '服务器内部错误', details: error.message });
+    // 生产环境不暴露详细错误信息
+    if (process.env.NODE_ENV === 'production') {
+      console.error('创建分享失败:', error.message);
+    } else {
+      console.error('创建分享失败:', error);
+      console.error('错误堆栈:', error.stack);
+      console.error('请求体:', req.body);
+    }
+    res.status(500).json({ 
+      error: '服务器内部错误',
+      ...(process.env.NODE_ENV !== 'production' && { details: error.message })
+    });
   }
 });
 
@@ -67,8 +75,15 @@ router.get('/:shareId', async (req, res) => {
       type: parsedData.type
     });
   } catch (error: any) {
-    console.error('获取分享数据失败:', error);
-    res.status(500).json({ error: '服务器内部错误', details: error.message });
+    if (process.env.NODE_ENV === 'production') {
+      console.error('获取分享数据失败:', error.message);
+    } else {
+      console.error('获取分享数据失败:', error);
+    }
+    res.status(500).json({ 
+      error: '服务器内部错误',
+      ...(process.env.NODE_ENV !== 'production' && { details: error.message })
+    });
   }
 });
 

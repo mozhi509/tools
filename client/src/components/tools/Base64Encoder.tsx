@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
 
@@ -6,23 +6,12 @@ const Base64Encoder: React.FC = () => {
   const [inputText, setInputText] = useState<string>('');
   const [outputText, setOutputText] = useState<string>('');
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
-  const [theme, setTheme] = useState<string>('vs-light');
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
-  // 页面加载时从localStorage恢复设置
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  // 主题变化时保存到localStorage
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
 
 
   const processBase64 = () => {
@@ -98,8 +87,6 @@ const Base64Encoder: React.FC = () => {
     }}>
       {/* 导航栏 */}
       <ToolNavigation 
-        theme={theme}
-        setTheme={setTheme}
         currentTheme={currentTheme}
       />
       

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import ToolNavigation from './ToolNavigation';
 
 const DonatePageSimple: React.FC = () => {
-  const [theme, setTheme] = useState('vs-light');
+
 
   const currentTheme = {
     name: 'VS Code Light',
@@ -50,8 +50,6 @@ const DonatePageSimple: React.FC = () => {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <ToolNavigation 
-        theme={theme} 
-        setTheme={setTheme} 
         currentTheme={currentTheme} 
       />
 

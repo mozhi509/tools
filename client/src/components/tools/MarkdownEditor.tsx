@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
 
 const MarkdownEditor: React.FC = () => {
   const [markdown, setMarkdown] = useState<string>('');
-  const [theme, setTheme] = useState<string>('vs-light');
+
   const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
 
   const sampleMarkdown = `# Markdown 示例
@@ -69,20 +69,49 @@ function hello() {
 
 
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
 
+
+  // HTML清理函数，防止XSS攻击
+  const sanitizeHtml = (html: string): string => {
+    // 移除危险的HTML标签和属性
+    const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea'];
+    const dangerousAttributes = ['onclick', 'onload', 'onerror', 'onmouseover', 'onfocus', 'onblur'];
+    
+    let sanitized = html;
+    
+    // 移除危险标签
+    dangerousTags.forEach(tag => {
+      const regex = new RegExp(`<${tag}[^>]*>.*?</${tag}>`, 'gi');
+      sanitized = sanitized.replace(regex, '');
+      // 自闭合标签
+      const selfClosingRegex = new RegExp(`<${tag}[^>]*/>`, 'gi');
+      sanitized = sanitized.replace(selfClosingRegex, '');
+    });
+    
+    // 移除危险属性
+    dangerousAttributes.forEach(attr => {
+      const regex = new RegExp(`\\s${attr}\\s*=\\s*["'][^"']*["']`, 'gi');
+      sanitized = sanitized.replace(regex, '');
+    });
+    
+    // 移除javascript:链接
+    sanitized = sanitized.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href=""');
+    
+    // 移除data: URL（除了允许的图片格式）
+    sanitized = sanitized.replace(/src\s*=\s*["']data:(?!image\/(jpeg|png|gif|webp))[^"']*["']/gi, 'src=""');
+    
+    return sanitized;
+  };
 
   const parseMarkdown = (text: string): string => {
-    let html = text;
+    // 首先转义HTML特殊字符
+    let html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
     // 标题
     html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
@@ -105,11 +134,24 @@ function hello() {
     // 代码块
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
 
-    // 链接
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>');
+    // 安全的链接处理
+    html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_match, text, url) => {
+      // 验证URL安全性
+      if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+      }
+      // 禁止javascript:和data:等危险协议
+      return `<span>${text}</span>`;
+    });
 
-    // 图片
-    html = html.replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;" />');
+    // 安全的图片处理
+    html = html.replace(/!\[(.+?)\]\((.+?)\)/g, (_match, alt, src) => {
+      // 只允许http, https和相对路径的图片
+      if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('/') || src.startsWith('data:image/')) {
+        return `<img src="${src}" alt="${alt}" style="max-width: 100%; height: auto;" />`;
+      }
+      return `<span>[图片: ${alt}]</span>`;
+    });
 
     // 引用
     html = html.replace(/^> (.+)$/gim, '<blockquote>$1</blockquote>');
@@ -143,7 +185,8 @@ function hello() {
       return `<table><tr>${headerCells}</tr></table>`;
     });
 
-    return html;
+    // 最终HTML清理
+    return sanitizeHtml(html);
   };
 
   const copyToClipboard = (text: string) => {
@@ -158,7 +201,7 @@ function hello() {
     setMarkdown(sampleMarkdown);
   };
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
   return (
     <div style={{
@@ -170,8 +213,6 @@ function hello() {
       fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     }}>
       <ToolNavigation 
-        theme={theme}
-        setTheme={setTheme}
         currentTheme={currentTheme}
       />
       

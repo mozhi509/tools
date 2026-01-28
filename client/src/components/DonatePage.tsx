@@ -22,16 +22,7 @@ interface DonationAmount {
 }
 
 const DonatePage: React.FC = () => {
-  const [theme, setTheme] = useState<string>('light');
-  const [currentTheme, setCurrentTheme] = useState<ThemeColors>(themes.light || {
-    background: '#ffffff',
-    foreground: '#000000',
-    header: '#f5f5f5',
-    border: '#e0e0e0',
-    button: '#007bff',
-    buttonForeground: '#ffffff',
-    placeholder: '#6c757d',
-  });
+  const currentTheme = themes.vsLight;
   const [copiedText, setCopiedText] = useState<string>('');
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [customAmount, setCustomAmount] = useState<string>('');
@@ -129,12 +120,7 @@ const DonatePage: React.FC = () => {
     }
   }, [selectedMethod]);
 
-  useEffect(() => {
-    const newTheme = themes[theme as keyof typeof themes];
-    if (newTheme) {
-      setCurrentTheme(newTheme);
-    }
-  }, [theme]);
+
 
   const copyToClipboard = async (text: string, type: string) => {
     try {
@@ -189,9 +175,7 @@ const DonatePage: React.FC = () => {
     }}>
       {/* 导航栏 */}
       <ToolNavigation 
-        theme={theme} 
-        setTheme={setTheme} 
-        currentTheme={safeTheme} 
+        currentTheme={currentTheme} 
       />
 
       {/* 主要内容 */}

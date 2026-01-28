@@ -36,6 +36,12 @@ const generateUniqueFileName = (prefix: string, extension: string = '.mp4'): str
   return `${prefix}-${timestamp}-${random}${extension}`;
 };
 
+// 安全的文件名验证函数
+const sanitizeFilename = (filename: string): string => {
+  // 移除路径分隔符和特殊字符
+  return filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+};
+
 // 上传视频
 router.post('/upload', upload.single('video'), (req: Request, res: Response) => {
   try {
@@ -46,9 +52,23 @@ router.post('/upload', upload.single('video'), (req: Request, res: Response) => 
       });
     }
 
+    // 验证文件大小（额外检查）
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (req.file.size > maxSize) {
+      // 删除已上传的文件
+      fs.unlinkSync(req.file.path);
+      return res.status(413).json({
+        success: false,
+        error: '文件大小超过限制'
+      });
+    }
+
+    // 安全地处理原始文件名
+    const sanitizedName = sanitizeFilename(req.file.originalname);
+    
     const videoInfo = {
       filename: req.file.filename,
-      originalName: req.file.originalname,
+      originalName: sanitizedName,
       size: req.file.size,
       mimetype: req.file.mimetype,
       path: req.file.path
@@ -61,7 +81,7 @@ router.post('/upload', upload.single('video'), (req: Request, res: Response) => 
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: '文件上传失败'
     });
   }
 });
@@ -78,8 +98,10 @@ router.post('/trim', async (req: Request<{}, VideoTrimResponse, VideoTrimRequest
       });
     }
 
-    const inputPath = path.join('uploads', path.basename(videoPath));
-    const outputPath = path.join('uploads/processed', generateUniqueFileName(outputName));
+    // 安全的文件路径处理，防止路径遍历攻击
+    const sanitizedVideoPath = sanitizeFilename(path.basename(videoPath));
+    const inputPath = path.join('uploads', sanitizedVideoPath);
+    const outputPath = path.join('uploads/processed', generateUniqueFileName(sanitizeFilename(outputName)));
 
     // 确保输出目录存在
     if (!fs.existsSync('uploads/processed')) {
@@ -130,8 +152,9 @@ router.post('/merge', async (req: Request<{}, VideoMergeResponse, VideoMergeRequ
       });
     }
 
+    // 安全处理所有视频路径
     const inputPaths = videoPaths.map(videoPath => 
-      path.join('uploads', path.basename(videoPath))
+      path.join('uploads', sanitizeFilename(path.basename(videoPath)))
     );
 
     // 检查所有输入文件是否存在
@@ -191,8 +214,10 @@ router.post('/filter', async (req: Request<{}, VideoFilterResponse, VideoFilterR
       });
     }
 
-    const inputPath = path.join('uploads', path.basename(videoPath));
-    const outputPath = path.join('uploads/processed', generateUniqueFileName(outputName));
+    // 安全的文件路径处理，防止路径遍历攻击
+    const sanitizedVideoPath = sanitizeFilename(path.basename(videoPath));
+    const inputPath = path.join('uploads', sanitizedVideoPath);
+    const outputPath = path.join('uploads/processed', generateUniqueFileName(sanitizeFilename(outputName)));
 
     // 确保输出目录存在
     if (!fs.existsSync('uploads/processed')) {
@@ -264,7 +289,20 @@ router.post('/filter', async (req: Request<{}, VideoFilterResponse, VideoFilterR
 router.get('/download/:filename', (req: Request, res: Response) => {
   try {
     const filename = req.params.filename;
-    const filePath = path.join('uploads/processed', filename);
+    
+    // 防止路径遍历攻击
+    const sanitizedFilename = sanitizeFilename(filename);
+    const filePath = path.join('uploads/processed', sanitizedFilename);
+
+    // 验证文件路径是否在允许的目录内
+    const resolvedPath = path.resolve(filePath);
+    const allowedDir = path.resolve('uploads/processed');
+    if (!resolvedPath.startsWith(allowedDir)) {
+      return res.status(403).json({
+        success: false,
+        error: '访问被拒绝'
+      });
+    }
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
@@ -273,9 +311,12 @@ router.get('/download/:filename', (req: Request, res: Response) => {
       });
     }
 
-    res.download(filePath, filename, (err) => {
+    // 设置安全头
+    res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    res.download(filePath, sanitizedFilename, (err) => {
       if (err) {
-        console.error('Download error:', err);
         if (!res.headersSent) {
           res.status(500).json({
             success: false,
@@ -287,7 +328,7 @@ router.get('/download/:filename', (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: '下载失败'
     });
   }
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { themes, ThemeColors } from './themes';
+import { ThemeColors } from './themes';
 
 export interface Tool {
   id: string;
@@ -19,275 +19,188 @@ export interface ToolCategory {
 
 export const toolCategories: ToolCategory[] = [
   {
-    id: 'text',
-    name: '文本处理',
-    icon: '📄',
+    id: 'toolbox',
+    name: '工具箱',
+    icon: '🧰',
     tools: [
       { id: 'json', name: 'JSON', icon: '{ }', path: '/json-formatter', description: 'JSON格式化工具' },
       { id: 'base64', name: 'Base64', icon: '🔤', path: '/base64', description: 'Base64编解码器' },
       { id: 'markdown', name: 'Markdown', icon: '📝', path: '/markdown', description: 'Markdown编辑器' },
       { id: 'image', name: '图片编辑', icon: '🖼️', path: '/image-editor', description: '在线图片编辑器' },
       { id: 'video', name: '视频剪辑', icon: '🎬', path: '/video-editor', description: '在线视频剪辑器' },
-    ]
-  },
-  {
-    id: 'validation',
-    name: '验证测试',
-    icon: '✅',
-    tools: [
       { id: 'regex', name: '正则', icon: '🔍', path: '/regex', description: '正则表达式测试' },
       { id: 'jwt', name: 'JWT', icon: '🔐', path: '/jwt', description: 'JWT Token解析' },
-    ]
-  },
-  {
-    id: 'converter',
-    name: '转换工具',
-    icon: '🔄',
-    tools: [
       { id: 'timestamp', name: '时间戳', icon: '🕐', path: '/timestamp', description: '时间戳转换器' },
       { id: 'url', name: 'URL', icon: '🔗', path: '/url', description: 'URL参数解析' },
       { id: 'color', name: '颜色', icon: '🎨', path: '/color', description: '颜色转换器' },
-    ]
-  },
-  {
-    id: 'generator',
-    name: '生成器',
-    icon: '🎲',
-    tools: [
       { id: 'uuid', name: 'UUID', icon: '🆔', path: '/uuid', description: 'UUID生成器' },
+      { id: 'hash', name: '哈希', icon: '#', path: '/hash', description: '哈希计算器' },
+      { id: 'encrypt', name: '加密', icon: '🔒', path: '/encrypt', description: '加密解密工具' },
     ]
   }
 ];
 
-// 兼容性：保持原有的tools数组
 export const tools: Tool[] = toolCategories.flatMap(category => category.tools);
 
 interface ToolNavigationProps {
-  theme: string;
-  setTheme: (theme: string) => void;
   currentTheme: ThemeColors;
 }
 
-interface CategorySectionProps {
-  category: ToolCategory;
-  currentTheme: ThemeColors;
-  location: any;
-}
-
-const CategorySection: React.FC<CategorySectionProps> = ({ category, currentTheme, location }) => {
+const ToolNavigation: React.FC<ToolNavigationProps> = ({ currentTheme }) => {
+  const location = useLocation();
   const navigate = useNavigate();
+  const [isToolboxOpen, setIsToolboxOpen] = React.useState(false);
 
-  // 判断是否为激活状态，支持根路径
-  const isActive = (toolPath: string) => {
-    if (location.pathname === toolPath) {
-      return true;
-    }
-    // 根路径 / 应该高亮 JSON 工具
-    if (location.pathname === '/' && toolPath === '/json-formatter') {
-      return true;
-    }
-    return false;
+  const handleToolClick = (toolPath: string) => {
+    navigate(toolPath);
+    setIsToolboxOpen(false);
   };
+
+  const currentTool = tools.find(tool => location.pathname.includes(tool.path));
 
   return (
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: '2px',
-      flexShrink: 0,
-    }}>
-      {category.tools.map((tool) => (
-        <button
-          key={tool.id}
-          onClick={() => navigate(tool.path)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '6px 10px',
-            backgroundColor: isActive(tool.path)
-              ? currentTheme.button 
-              : 'transparent',
-            color: isActive(tool.path)
-              ? (currentTheme.buttonForeground || currentTheme.foreground)
-              : currentTheme.placeholder,
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            transition: 'all 0.2s ease',
-            textDecoration: 'none',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-          title={tool.description}
-        >
-          <span style={{ fontSize: '14px' }}>{tool.icon}</span>
-          <span style={{ fontSize: '14px' }}>{tool.name}</span>
-        </button>
-      ))}
-    </div>
-  );
-};
-
-const ToolNavigation: React.FC<ToolNavigationProps> = ({ theme, setTheme, currentTheme }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  return (
-    <div style={{
-      backgroundColor: currentTheme.header,
+      justifyContent: 'space-between',
+      padding: '8px 16px',
+      backgroundColor: currentTheme.background,
       borderBottom: `1px solid ${currentTheme.border}`,
-      padding: '8px 0',
+      minHeight: '48px',
+      flexWrap: 'wrap',
+      gap: '8px',
     }}>
+      {/* 左侧：工具箱和当前工具 */}
       <div style={{
-        margin: '0 auto',
-        padding: '0 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        flex: 1,
+        minWidth: '200px',
       }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          {/* Logo */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginRight: '16px',
-            paddingRight: '16px',
-            borderRight: `1px solid ${currentTheme.border}`,
-          }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold', color: currentTheme.button }}>
-              🔧
-            </span>
+        {/* 工具箱下拉菜单 */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setIsToolboxOpen(!isToolboxOpen)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 10px',
+              backgroundColor: currentTheme.background,
+              border: `1px solid ${currentTheme.border}`,
+              borderRadius: '6px',
+              color: currentTheme.foreground,
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = currentTheme.hover || currentTheme.background;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = currentTheme.background;
+            }}
+          >
+            <span>🧰</span>
+            <span>工具箱</span>
             <span style={{ 
-              fontSize: '14px', 
-              fontWeight: 'bold',
-              color: currentTheme.foreground 
+              fontSize: '10px',
+              transition: 'transform 0.2s ease',
+              transform: isToolboxOpen ? 'rotate(180deg)' : 'rotate(0deg)'
             }}>
-              DevTools
+              ▼
             </span>
-          </div>
-          
-          {/* 工具导航 */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            gap: '16px',
-          }}>
-            {/* 工具导航 */}
-            <div style={{
-              display: 'flex',
-              gap: '2px',
-              alignItems: 'center',
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              flex: 1,
-              // 隐藏滚动条
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            }}>
-              <style>
-                {`
-                  .tools-nav::-webkit-scrollbar {
-                    display: none;
-                  }
-                  .tools-nav::-moz-scrollbar {
-                    display: none;
-                  }
-                  .tools-nav::-ms-scrollbar {
-                    display: none;
-                  }
-                `}
-              </style>
-              <div className="tools-nav" style={{
-                display: 'flex',
-                gap: '2px',
-                alignItems: 'center',
-              }}>
-                {toolCategories.map((category) => (
-                  <CategorySection
-                    key={category.id}
-                    category={category}
-                    currentTheme={currentTheme}
-                    location={location}
-                  />
-                ))}
-              </div>
-            </div>
-            
-            {/* 主题选择器 */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              flexShrink: 0,
-            }}>
+            {currentTool && (
               <span style={{
-                fontSize: '11px',
-                color: currentTheme.placeholder,
-                marginRight: '4px',
+                marginLeft: '8px',
+                color: currentTheme.accent || currentTheme.button,
+                fontSize: '12px'
               }}>
-                主题:
+                {currentTool.icon} {currentTool.name}
               </span>
-              <select
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                style={{
-                  backgroundColor: currentTheme.background,
-                  color: currentTheme.foreground,
-                  border: `1px solid ${currentTheme.border}`,
-                  padding: '4px 6px',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                }}
-              >
-                {Object.entries(themes).map(([key, themeConfig]) => (
-                  <option key={key} value={key}>
-                    {themeConfig.name}
-                  </option>
-                ))}
-              </select>
-              
-              {/* 打赏按钮 */}
-              <button
-                onClick={() => navigate('/donate')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 10px',
-                  backgroundColor: location.pathname === '/donate' 
-                    ? currentTheme.button 
-                    : 'transparent',
-                  color: location.pathname === '/donate' 
-                    ? (currentTheme.buttonForeground || currentTheme.foreground)
-                    : currentTheme.placeholder,
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  transition: 'all 0.2s ease',
-                  textDecoration: 'none',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-                title="Buy me a coffee"
-              >
-                <span style={{ fontSize: '14px' }}>☕</span>
-                <span>Coffee</span>
-              </button>
+            )}
+          </button>
+
+          {/* 下拉菜单 */}
+          {isToolboxOpen && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              backgroundColor: currentTheme.background,
+              border: `1px solid ${currentTheme.border}`,
+              borderRadius: '6px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              zIndex: 1000,
+              minWidth: '200px',
+              maxHeight: '400px',
+              overflowY: 'auto',
+            }}>
+              {toolCategories.map((category) => (
+                <div key={category.id}>
+                  <div style={{
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: currentTheme.accent || currentTheme.button,
+                    borderBottom: `1px solid ${currentTheme.border}`,
+                  }}>
+                    {category.icon} {category.name}
+                  </div>
+                  {category.tools.map((tool) => (
+                    <button
+                      key={tool.id}
+                      onClick={() => handleToolClick(tool.path)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '10px 12px',
+                        backgroundColor: currentTheme.background,
+                        border: 'none',
+                        color: currentTheme.foreground,
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        transition: 'background-color 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = currentTheme.hover || currentTheme.background;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = currentTheme.background;
+                      }}
+                    >
+                      <span>{tool.icon}</span>
+                      <span>{tool.name}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
+
+
+
+      {/* 点击外部关闭下拉菜单 */}
+      {isToolboxOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+          }}
+          onClick={() => setIsToolboxOpen(false)}
+        />
+      )}
     </div>
   );
 };
 
 export default ToolNavigation;
-

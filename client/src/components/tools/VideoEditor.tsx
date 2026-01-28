@@ -22,7 +22,7 @@ interface VideoFilter {
 }
 
 const VideoEditor: React.FC = () => {
-  const [theme, setTheme] = useState<string>('vs-light');
+
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>('');
   const [uploadedVideoPath, setUploadedVideoPath] = useState<string>('');
@@ -50,16 +50,7 @@ const VideoEditor: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -287,11 +278,11 @@ const VideoEditor: React.FC = () => {
     });
   };
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: currentTheme.background }}>
-      <ToolNavigation theme={theme} setTheme={setTheme} currentTheme={currentTheme} />
+      <ToolNavigation currentTheme={currentTheme} />
       
       <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
         <div style={{

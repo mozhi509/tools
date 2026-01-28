@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
 
@@ -16,7 +16,7 @@ interface ColorFormats {
 const ColorConverter: React.FC = () => {
   const [colorInput, setColorInput] = useState<string>('');
   const [colorFormats, setColorFormats] = useState<ColorFormats | null>(null);
-  const [theme, setTheme] = useState<string>('vs-light');
+
 
   const sampleColors = [
     { name: '红色', color: '#FF0000' },
@@ -30,16 +30,7 @@ const ColorConverter: React.FC = () => {
   ];
 
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
 
 
   const hexToRgb = (hex: string): { r: number, g: number, b: number } | null => {
@@ -236,7 +227,7 @@ const ColorConverter: React.FC = () => {
     setColorFormats(formats);
   };
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
   return (
     <div style={{
@@ -248,8 +239,6 @@ const ColorConverter: React.FC = () => {
       fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     }}>
       <ToolNavigation 
-        theme={theme}
-        setTheme={setTheme}
         currentTheme={currentTheme}
       />
       

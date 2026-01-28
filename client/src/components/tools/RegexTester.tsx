@@ -69,8 +69,6 @@ const RegexTester: React.FC = () => {
       fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     }}>
       <ToolNavigation 
-        theme=""
-        setTheme={() => {}}
         currentTheme={{
           name: 'vs-light',
           background: '#ffffff',

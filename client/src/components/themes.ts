@@ -13,6 +13,8 @@ export interface ThemeColors {
   comma: string;
   placeholder: string;
   buttonForeground?: string;
+  hover?: string;
+  accent?: string;
 }
 
 export const themes: { [key: string]: ThemeColors } = {
@@ -30,7 +32,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#c586c0',
     comma: '#d4d4d4',
     placeholder: '#8b949e',
-    buttonForeground: '#ffffff'
+    buttonForeground: '#ffffff',
+    hover: '#2d2d30',
+    accent: '#0078d4'
   },
   'github-dark': {
     name: 'GitHub Dark',
@@ -46,7 +50,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#d2a8ff',
     comma: '#8b949e',
     placeholder: '#8b949e',
-    buttonForeground: '#ffffff'
+    buttonForeground: '#ffffff',
+    hover: '#21262d',
+    accent: '#58a6ff'
   },
   'monokai': {
     name: 'Monokai',
@@ -62,7 +68,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#f92672',
     comma: '#75715e',
     placeholder: '#75715e',
-    buttonForeground: '#000000'
+    buttonForeground: '#000000',
+    hover: '#3e3d32',
+    accent: '#66d9ef'
   },
   'dracula': {
     name: 'Dracula',
@@ -78,7 +86,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#ff79c6',
     comma: '#6272a4',
     placeholder: '#6272a4',
-    buttonForeground: '#ffffff'
+    buttonForeground: '#ffffff',
+    hover: '#44475a',
+    accent: '#bd93f9'
   },
   'solarized-dark': {
     name: 'Solarized Dark',
@@ -94,7 +104,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#859900',
     comma: '#657b83',
     placeholder: '#586e75',
-    buttonForeground: '#ffffff'
+    buttonForeground: '#ffffff',
+    hover: '#073642',
+    accent: '#268bd2'
   },
   'vs-light': {
     name: 'VS Code Light',
@@ -110,7 +122,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#000000',
     comma: '#000000',
     placeholder: '#6e6e6e',
-    buttonForeground: '#ffffff'
+    buttonForeground: '#ffffff',
+    hover: '#f3f3f3',
+    accent: '#0078d4'
   },
   'vs-high-contrast': {
     name: 'VS Code High Contrast',
@@ -126,7 +140,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#ffd700',
     comma: '#ffffff',
     placeholder: '#ffffff',
-    buttonForeground: '#000000'
+    buttonForeground: '#000000',
+    hover: '#1a1a1a',
+    accent: '#1a85ff'
   },
   'facebook': {
     name: 'Facebook',
@@ -142,7 +158,9 @@ export const themes: { [key: string]: ThemeColors } = {
     bracket: '#1c1e21',
     comma: '#606770',
     placeholder: '#8a8d91',
-    buttonForeground: '#ffffff'
+    buttonForeground: '#ffffff',
+    hover: '#f0f2f5',
+    accent: '#1877f2'
   }
 };
 

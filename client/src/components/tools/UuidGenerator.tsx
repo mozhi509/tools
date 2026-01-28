@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
 
@@ -16,20 +16,11 @@ const UuidGenerator: React.FC = () => {
   const [version, setVersion] = useState<string>('v4');
   const [uppercase, setUppercase] = useState<boolean>(false);
   const [withDashes, setWithDashes] = useState<boolean>(true);
-  const [theme, setTheme] = useState<string>('vs-light');
 
 
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
+
 
 
   const generateUuid = (): string => {
@@ -80,23 +71,20 @@ const UuidGenerator: React.FC = () => {
         variant: 'RFC 4122'
       });
     }
-    setUuids(newUuids);
+    setUuids(prevUuids => [...prevUuids, ...newUuids]);
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  const copyAllUuids = () => {
-    const allUuids = uuids.map(info => info.uuid).join('\n');
-    navigator.clipboard.writeText(allUuids);
-  };
+
 
   const clearAll = () => {
     setUuids([]);
   };
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
   return (
     <div style={{
@@ -108,40 +96,10 @@ const UuidGenerator: React.FC = () => {
       fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     }}>
       <ToolNavigation 
-        theme={theme}
-        setTheme={setTheme}
         currentTheme={currentTheme}
       />
       
-      <div style={{
-        padding: '16px',
-        borderBottom: `1px solid ${currentTheme.border}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: currentTheme.header,
-      }}>
-        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 'normal' }}>
-          🆔 UUID生成器
-        </h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={clearAll}
-            disabled={uuids.length === 0}
-            style={{
-              backgroundColor: uuids.length > 0 ? currentTheme.border : currentTheme.header,
-              color: currentTheme.foreground,
-              border: `1px solid ${currentTheme.border}`,
-              padding: '6px 12px',
-              borderRadius: '4px',
-              cursor: uuids.length > 0 ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-            }}
-          >
-            清空
-          </button>
-        </div>
-      </div>
+
 
       <div style={{
         padding: '16px',
@@ -149,14 +107,24 @@ const UuidGenerator: React.FC = () => {
         backgroundColor: currentTheme.header,
       }}>
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          display: 'flex',
+          flexDirection: 'column',
           gap: '16px',
           marginBottom: '16px',
         }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>
-              数量
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}>
+            <label style={{ 
+              fontSize: '12px', 
+              minWidth: '60px',
+              textAlign: 'left',
+              color: currentTheme.placeholder
+            }}>
+              数量:
             </label>
             <input
               type="number"
@@ -165,7 +133,7 @@ const UuidGenerator: React.FC = () => {
               value={amount}
               onChange={(e) => setAmount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
               style={{
-                width: '100%',
+                width: '120px',
                 padding: '6px',
                 backgroundColor: currentTheme.background,
                 color: currentTheme.foreground,
@@ -176,15 +144,25 @@ const UuidGenerator: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>
-              版本
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}>
+            <label style={{ 
+              fontSize: '12px', 
+              minWidth: '60px',
+              textAlign: 'left',
+              color: currentTheme.placeholder
+            }}>
+              版本:
             </label>
             <select
               value={version}
               onChange={(e) => setVersion(e.target.value)}
               style={{
-                width: '100%',
+                width: '200px',
                 padding: '6px',
                 backgroundColor: currentTheme.background,
                 color: currentTheme.foreground,
@@ -198,63 +176,67 @@ const UuidGenerator: React.FC = () => {
             </select>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>
-              选项
+          <div style={{
+            display: 'flex',
+            gap: '20px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={uppercase}
+                onChange={(e) => setUppercase(e.target.checked)}
+              />
+              <span style={{ fontSize: '12px' }}>大写</span>
             </label>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={uppercase}
-                  onChange={(e) => setUppercase(e.target.checked)}
-                />
-                <span style={{ fontSize: '12px' }}>大写</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={withDashes}
-                  onChange={(e) => setWithDashes(e.target.checked)}
-                />
-                <span style={{ fontSize: '12px' }}>包含横线</span>
-              </label>
-            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={withDashes}
+                onChange={(e) => setWithDashes(e.target.checked)}
+              />
+              <span style={{ fontSize: '12px' }}>包含横线</span>
+            </label>
           </div>
         </div>
 
         <div style={{
           display: 'flex',
           gap: '8px',
+          justifyContent: 'flex-start',
+          flexWrap: 'wrap',
         }}>
+          <button
+            onClick={clearAll}
+            disabled={uuids.length === 0}
+            style={{
+              backgroundColor: uuids.length > 0 ? currentTheme.border : currentTheme.header,
+              color: currentTheme.foreground,
+              border: `1px solid ${currentTheme.border}`,
+              padding: '8px 12px',
+              borderRadius: '4px',
+              cursor: uuids.length > 0 ? 'pointer' : 'not-allowed',
+              fontSize: '14px',
+              flex: '0 0 auto',
+            }}
+          >
+            清空
+          </button>
           <button
             onClick={generateMultipleUuids}
             style={{
               backgroundColor: currentTheme.button,
               color: currentTheme.buttonForeground || currentTheme.foreground,
               border: `1px solid ${currentTheme.border}`,
-              padding: '8px 16px',
+              padding: '8px 12px',
               borderRadius: '4px',
               cursor: 'pointer',
               fontSize: '14px',
+              flex: '0 0 auto',
             }}
           >
-            生成UUID
-          </button>
-          <button
-            onClick={copyAllUuids}
-            disabled={uuids.length === 0}
-            style={{
-              backgroundColor: uuids.length > 0 ? currentTheme.button : currentTheme.border,
-              color: currentTheme.buttonForeground || currentTheme.foreground,
-              border: `1px solid ${currentTheme.border}`,
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: uuids.length > 0 ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-            }}
-          >
-            复制全部
+            生成
           </button>
         </div>
       </div>
@@ -269,6 +251,7 @@ const UuidGenerator: React.FC = () => {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
             gap: '12px',
+            justifyContent: 'start',
           }}>
             {uuids.map((info, index) => (
               <div
@@ -329,12 +312,10 @@ const UuidGenerator: React.FC = () => {
           </div>
         ) : (
           <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'flex-start',
             color: currentTheme.placeholder,
             fontSize: '14px',
-            padding: '16px',
+            padding: '16px 16px 16px 0',
+            textAlign: 'left',
           }}>
             配置选项并点击"生成UUID"
           </div>

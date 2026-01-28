@@ -7,7 +7,7 @@ const TimestampConverter: React.FC = () => {
   const [datetime, setDatetime] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [conversions, setConversions] = useState<any[]>([]);
-  const [theme, setTheme] = useState<string>('vs-light');
+
 
   const commonTimestamps = [
     { name: '当前时间', value: Date.now() },
@@ -21,16 +21,7 @@ const TimestampConverter: React.FC = () => {
   ];
 
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -115,7 +106,7 @@ const TimestampConverter: React.FC = () => {
     setConversions([formats]);
   };
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
   return (
     <div style={{
@@ -127,8 +118,6 @@ const TimestampConverter: React.FC = () => {
       fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     }}>
       <ToolNavigation 
-        theme={theme}
-        setTheme={setTheme}
         currentTheme={currentTheme}
       />
       

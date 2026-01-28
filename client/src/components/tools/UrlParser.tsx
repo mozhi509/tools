@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
 
@@ -20,7 +20,7 @@ const UrlParser: React.FC = () => {
   const [urlInput, setUrlInput] = useState<string>('');
   const [params, setParams] = useState<URLParams>({});
   const [components, setComponents] = useState<URLComponents | null>(null);
-  const [theme, setTheme] = useState<string>('vs-light');
+
 
   const sampleUrls = [
     { name: '百度搜索', url: 'https://www.baidu.com/s?wd=react&pn=10' },
@@ -30,16 +30,7 @@ const UrlParser: React.FC = () => {
   ];
 
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
 
 
   const parseUrl = () => {
@@ -89,7 +80,7 @@ const UrlParser: React.FC = () => {
     parseUrl();
   };
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
   return (
     <div style={{
@@ -101,8 +92,6 @@ const UrlParser: React.FC = () => {
       fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
     }}>
       <ToolNavigation 
-        theme={theme}
-        setTheme={setTheme}
         currentTheme={currentTheme}
       />
       

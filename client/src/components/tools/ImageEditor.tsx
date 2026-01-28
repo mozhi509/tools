@@ -29,7 +29,7 @@ interface BlurArea {
 }
 
 const ImageEditor: React.FC = () => {
-  const [theme, setTheme] = useState<string>('vs-light');
+
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [editedImage, setEditedImage] = useState<string | null>(null);
   const [filters, setFilters] = useState<ImageFilter>({
@@ -60,16 +60,7 @@ const ImageEditor: React.FC = () => {
   const imageRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('json-formatter-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('json-formatter-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     if (originalImage) {
@@ -335,11 +326,11 @@ const ImageEditor: React.FC = () => {
     };
   };
 
-  const currentTheme = getThemeColors(theme);
+  const currentTheme = getThemeColors('vs-light');
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: currentTheme.background }}>
-      <ToolNavigation theme={theme} setTheme={setTheme} currentTheme={currentTheme} />
+      <ToolNavigation currentTheme={currentTheme} />
       
       <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{
