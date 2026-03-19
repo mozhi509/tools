@@ -6,10 +6,12 @@ import path from 'path';
 import toolsRouter from './routes/tools';
 import videoRouter from './routes/video';
 import shareRouter from './routes/share';
+import chatRouter from './routes/chat';
 import { connectRedis, disconnectRedis } from './redis';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+app.set('trust proxy', true);
 
 // 安全中间件
 app.use(helmet({
@@ -52,6 +54,7 @@ if (process.env.NODE_ENV === 'production') {
 app.use('/api/tools', toolsRouter);
 app.use('/api/video', videoRouter);
 app.use('/api/share', shareRouter);
+app.use('/api/chat', chatRouter);
 
 // 健康检查
 app.get('/api/health', (_req: Request, res: Response) => {

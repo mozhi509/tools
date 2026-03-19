@@ -15,5 +15,10 @@ export const API_ENDPOINTS = {
   url: {
     encode: `${API_BASE_URL}/tools/url/encode`,
     decode: `${API_BASE_URL}/tools/url/decode`,
+  },
+  chat: {
+    create: `${API_BASE_URL}/chat/create`,
+    join: (chatId: string) => `${API_BASE_URL}/chat/${chatId}/join`,
+    messages: (chatId: string) => `${API_BASE_URL}/chat/${chatId}/messages`,
   }
 };

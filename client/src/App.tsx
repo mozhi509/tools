@@ -14,6 +14,7 @@ import ColorConverter from './components/tools/ColorConverter';
 import ImageEditor from './components/tools/ImageEditor';
 import VideoEditor from './components/tools/VideoEditor';
 import DonatePageSimple from './components/DonatePageSimple';
+import SimpleChatPage from './components/tools/SimpleChatPage';
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/color" element={<ColorConverter />} />
           <Route path="/image-editor" element={<ImageEditor />} />
           <Route path="/video-editor" element={<VideoEditor />} />
+          <Route path="/chat/:chatId" element={<SimpleChatPage />} />
 
           <Route path="/donate" element={<DonatePageSimple />} />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ThemeColors } from './themes';
+import { API_ENDPOINTS } from '../config/api';
 
 export interface Tool {
   id: string;
@@ -50,6 +51,7 @@ const ToolNavigation: React.FC<ToolNavigationProps> = ({ currentTheme }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isToolboxOpen, setIsToolboxOpen] = React.useState(false);
+  const [creatingChat, setCreatingChat] = React.useState(false);
 
   const handleToolClick = (toolPath: string) => {
     navigate(toolPath);
@@ -57,6 +59,33 @@ const ToolNavigation: React.FC<ToolNavigationProps> = ({ currentTheme }) => {
   };
 
   const currentTool = tools.find(tool => location.pathname.includes(tool.path));
+
+  const handleCreateChat = async () => {
+    if (creatingChat) return;
+    setCreatingChat(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.chat.create, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '创建聊天失败');
+      }
+
+      const chatPath = data.chatPath as string;
+      const chatUrl = `${window.location.origin}${chatPath}`;
+      window.open(chatUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '创建聊天失败';
+      window.alert(message);
+    } finally {
+      setCreatingChat(false);
+    }
+  };
 
   return (
     <div style={{
@@ -184,6 +213,24 @@ const ToolNavigation: React.FC<ToolNavigationProps> = ({ currentTheme }) => {
       </div>
 
 
+
+      <div>
+        <button
+          onClick={() => { void handleCreateChat(); }}
+          disabled={creatingChat}
+          style={{
+            border: `1px solid ${currentTheme.border}`,
+            borderRadius: '6px',
+            padding: '6px 12px',
+            fontSize: '13px',
+            backgroundColor: creatingChat ? '#d1d5db' : '#2563eb',
+            color: '#fff',
+            cursor: creatingChat ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {creatingChat ? '创建中...' : '发起聊天'}
+        </button>
+      </div>
 
       {/* 点击外部关闭下拉菜单 */}
       {isToolboxOpen && (
