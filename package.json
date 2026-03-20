@@ -4,17 +4,19 @@
   "description": "一个功能强大的Web工具集，包含JSON格式化等实用工具",
   "main": "dist/index.js",
   "scripts": {
+    "check": "node scripts/check-standards.js",
     "dev": "concurrently \"npm run server:dev\" \"npm run client\"",
+    "dev:local": "bash scripts/dev-local.sh",
     "server": "node dist/index.js",
     "server:dev": "nodemon --exec ts-node server/index.ts",
     "server:build": "tsc",
     "client": "cd client && npm start",
     "client:build": "cd client && npm run build",
-    "build": "npm run server:build && npm run client:build",
+    "build": "npm run check && npm run server:build && npm run client:build",
     "build:client": "cd client && npm run build",
     "install-all": "npm install && cd client && npm install",
-    "test": "jest server/tests --config jest.config.js",
-    "test:client": "cd client && npm test",
+    "test": "npm run test:server && npm run test:client",
+    "test:client": "cd client && CI=true npm test -- --watchAll=false",
     "test:server": "jest server/tests --config jest.config.js"
   },
   "keywords": [

@@ -15,6 +15,8 @@ import ImageEditor from './components/tools/ImageEditor';
 import VideoEditor from './components/tools/VideoEditor';
 import DonatePageSimple from './components/DonatePageSimple';
 import SimpleChatPage from './components/tools/SimpleChatPage';
+import HashCalculator from './components/tools/HashCalculator';
+import EncryptTool from './components/tools/EncryptTool';
 
 
 function App() {
@@ -36,6 +38,8 @@ function App() {
           <Route path="/color" element={<ColorConverter />} />
           <Route path="/image-editor" element={<ImageEditor />} />
           <Route path="/video-editor" element={<VideoEditor />} />
+          <Route path="/hash" element={<HashCalculator />} />
+          <Route path="/encrypt" element={<EncryptTool />} />
           <Route path="/chat/:chatId" element={<SimpleChatPage />} />
 
           <Route path="/donate" element={<DonatePageSimple />} />

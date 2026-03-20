@@ -13,13 +13,6 @@ interface ImageFilter {
   invert: number;
 }
 
-interface CropArea {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 interface BlurArea {
   x: number;
   y: number;
@@ -42,8 +35,6 @@ const ImageEditor: React.FC = () => {
     hueRotate: 0,
     invert: 0,
   });
-  const [cropMode, setCropMode] = useState<boolean>(false);
-  const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 100, height: 100 });
   const [rotation, setRotation] = useState<number>(0);
   const [flipH, setFlipH] = useState<boolean>(false);
   const [flipV, setFlipV] = useState<boolean>(false);
@@ -54,8 +45,7 @@ const ImageEditor: React.FC = () => {
   const [isDrawingBlur, setIsDrawingBlur] = useState<boolean>(false);
   const [currentBlurArea, setCurrentBlurArea] = useState<BlurArea | null>(null);
   const [blurIntensity, setBlurIntensity] = useState<number>(10);
-  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +56,8 @@ const ImageEditor: React.FC = () => {
     if (originalImage) {
       applyFilters();
     }
+    // applyFilters 依赖过多，刻意仅在列出的状态变化时重绘画布
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 见上
   }, [filters, originalImage, rotation, flipH, flipV, blurAreas]);
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -287,6 +279,7 @@ const ImageEditor: React.FC = () => {
         document.removeEventListener('mouseup', handleGlobalMouseUp);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleBlurMouseUp 为稳定逻辑，避免重复绑定
   }, [isDrawingBlur, currentBlurArea]);
 
   const clearBlurAreas = () => {
@@ -394,7 +387,6 @@ const ImageEditor: React.FC = () => {
                       ref={imageRef}
                       src={editedImage || originalImage}
                       alt="编辑预览"
-                      onLoad={() => setImageLoaded(true)}
                       onMouseDown={handleBlurMouseDown}
                       onMouseMove={handleBlurMouseMove}
                       onMouseUp={handleBlurMouseUp}

@@ -82,8 +82,10 @@ export const copyWithFeedback = async (
   }
 };
 
-export default {
+const clipboardUtils = {
   copyToClipboard,
   fallbackCopyToClipboard,
-  copyWithFeedback
+  copyWithFeedback,
 };
+
+export default clipboardUtils;

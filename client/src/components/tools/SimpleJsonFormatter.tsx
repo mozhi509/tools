@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_ENDPOINTS } from '../../config/api';
 
 const SimpleJsonFormatter: React.FC = () => {
   const [inputJson, setInputJson] = useState<string>('');
@@ -11,7 +12,7 @@ const SimpleJsonFormatter: React.FC = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('/api/tools/json/format', {
+      const response = await fetch(API_ENDPOINTS.json.format, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,7 +44,7 @@ const SimpleJsonFormatter: React.FC = () => {
     if (!inputJson.trim()) return;
 
     try {
-      const response = await fetch('/api/tools/json/validate', {
+      const response = await fetch(API_ENDPOINTS.json.validate, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

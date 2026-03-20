@@ -48,15 +48,18 @@ router.post('/upload', upload.single('video'), (req: Request, res: Response) => 
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        error: '没有上传文件'
+        error: '没有上传文件',
       });
     }
 
-    // 验证文件大小（额外检查）
+    const filePath = req.file.path ?? path.join(req.file.destination || 'uploads', req.file.filename);
     const maxSize = 100 * 1024 * 1024; // 100MB
     if (req.file.size > maxSize) {
-      // 删除已上传的文件
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(filePath);
+      } catch {
+        // ignore
+      }
       return res.status(413).json({
         success: false,
         error: '文件大小超过限制'
@@ -71,17 +74,17 @@ router.post('/upload', upload.single('video'), (req: Request, res: Response) => 
       originalName: sanitizedName,
       size: req.file.size,
       mimetype: req.file.mimetype,
-      path: req.file.path
+      path: filePath,
     };
 
     res.json({
       success: true,
       video: videoInfo
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: '文件上传失败'
+      error: '文件上传失败',
     });
   }
 });
@@ -132,10 +135,10 @@ router.post('/trim', async (req: Request<{}, VideoTrimResponse, VideoTrimRequest
       success: true,
       videoUrl: outputUrl
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : '处理失败',
     });
   }
 });
@@ -194,10 +197,10 @@ router.post('/merge', async (req: Request<{}, VideoMergeResponse, VideoMergeRequ
       success: true,
       videoUrl: outputUrl
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : '处理失败',
     });
   }
 });
@@ -277,10 +280,10 @@ router.post('/filter', async (req: Request<{}, VideoFilterResponse, VideoFilterR
       success: true,
       videoUrl: outputUrl
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : '处理失败',
     });
   }
 });
@@ -325,10 +328,10 @@ router.get('/download/:filename', (req: Request, res: Response) => {
         }
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: '下载失败'
+      error: '下载失败',
     });
   }
 });
@@ -346,37 +349,35 @@ router.get('/info/:filename', async (req: Request, res: Response) => {
       });
     }
 
-    const info = await new Promise<any>((resolve, reject) => {
+    const info = await new Promise<ffmpeg.FfprobeData>((resolve, reject) => {
       ffmpeg.ffprobe(filePath, (err, metadata) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(metadata);
-        }
+        if (err) reject(err);
+        else if (metadata) resolve(metadata);
+        else reject(new Error('No metadata'));
       });
     });
 
     res.json({
       success: true,
       info: {
-        duration: info.format.duration,
-        size: info.format.size,
-        bitrate: info.format.bit_rate,
-        format: info.format.format_name,
-        streams: info.streams.map((stream: any) => ({
+        duration: info.format?.duration,
+        size: info.format?.size,
+        bitrate: info.format?.bit_rate,
+        format: info.format?.format_name,
+        streams: (info.streams ?? []).map((stream: ffmpeg.FfprobeStream) => ({
           codec: stream.codec_name,
           type: stream.codec_type,
           width: stream.width,
           height: stream.height,
           fps: stream.r_frame_rate,
-          bitrate: stream.bit_rate
-        }))
-      }
+          bitrate: stream.bit_rate,
+        })),
+      },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : '获取信息失败',
     });
   }
 });
@@ -406,10 +407,10 @@ router.delete('/cleanup/:filename', (req: Request, res: Response) => {
       success: deleted,
       message: deleted ? '文件删除成功' : '文件不存在'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : '删除失败',
     });
   }
 });

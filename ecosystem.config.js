@@ -1,3 +1,22 @@
+/**
+ * PM2 配置：密钥仅从 process.env 读取，勿在仓库中写死密码。
+ *
+ * 本地/CI：先加载环境再启动，例如：
+ *   set -a && source .env.prod && set +a && pm2 start ecosystem.config.js --env production
+ * 或使用 ./manage.sh start-prod
+ *
+ * Docker：由 docker-compose 注入 REDIS_PASSWORD，见 Dockerfile CMD。
+ */
+
+function intEnv(name, fallback) {
+  const v = process.env[name];
+  if (v === undefined || v === '') return fallback;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+const redisPassword = process.env.REDIS_PASSWORD || '';
+
 module.exports = {
   apps: [{
     name: 'web-toolkit',
@@ -7,40 +26,40 @@ module.exports = {
     exec_mode: 'fork',
     env: {
       NODE_ENV: 'development',
-      PORT: 3001,
-      REDIS_HOST: '127.0.0.1',
-      REDIS_PORT: 6379,
-      REDIS_PASSWORD: 'W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=',
-      REDIS_DB: 0
+      PORT: intEnv('PORT', 3001),
+      REDIS_HOST: process.env.REDIS_HOST || '127.0.0.1',
+      REDIS_PORT: intEnv('REDIS_PORT', 6379),
+      REDIS_PASSWORD: redisPassword,
+      REDIS_DB: intEnv('REDIS_DB', 0)
     },
     env_production: {
       NODE_ENV: 'production',
-      PORT: 3001,
-      REDIS_HOST: 'redis',
-      REDIS_PORT: 6379,
-      REDIS_PASSWORD: 'W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=',
-      REDIS_DB: 0,
-      MAX_MEMORY_RESTART: '1G',
-      NODE_MAX_OLD_SPACE_SIZE: 1024,
+      PORT: intEnv('PORT', 3001),
+      REDIS_HOST: process.env.REDIS_HOST || 'redis',
+      REDIS_PORT: intEnv('REDIS_PORT', 6379),
+      REDIS_PASSWORD: redisPassword,
+      REDIS_DB: intEnv('REDIS_DB', 0),
+      MAX_MEMORY_RESTART: process.env.MAX_MEMORY_RESTART || '1G',
+      NODE_MAX_OLD_SPACE_SIZE: intEnv('NODE_MAX_OLD_SPACE_SIZE', 1024),
       DOMAIN: process.env.DOMAIN || 'yourdomain.com',
       HTTPS_ENABLED: process.env.HTTPS_ENABLED || 'false'
     },
     env_staging: {
       NODE_ENV: 'staging',
-      PORT: 3001,
-      REDIS_HOST: 'redis',
-      REDIS_PORT: 6379,
-      REDIS_PASSWORD: 'W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=',
-      REDIS_DB: 0,
-      MAX_MEMORY_RESTART: '1G',
-      NODE_MAX_OLD_SPACE_SIZE: 1024
+      PORT: intEnv('PORT', 3001),
+      REDIS_HOST: process.env.REDIS_HOST || 'redis',
+      REDIS_PORT: intEnv('REDIS_PORT', 6379),
+      REDIS_PASSWORD: redisPassword,
+      REDIS_DB: intEnv('REDIS_DB', 0),
+      MAX_MEMORY_RESTART: process.env.MAX_MEMORY_RESTART || '1G',
+      NODE_MAX_OLD_SPACE_SIZE: intEnv('NODE_MAX_OLD_SPACE_SIZE', 1024)
     },
     error_file: './logs/err.log',
     out_file: './logs/out.log',
     log_file: './logs/combined.log',
     time: true,
     max_memory_restart: process.env.MAX_MEMORY_RESTART || '1G',
-    node_args: `--max-old-space-size=${process.env.NODE_MAX_OLD_SPACE_SIZE || 1024}`,
+    node_args: `--max-old-space-size=${intEnv('NODE_MAX_OLD_SPACE_SIZE', 1024)}`,
     watch: false,
     ignore_watch: ['node_modules', 'logs', 'uploads', 'dist'],
     restart_delay: 4000,

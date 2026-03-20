@@ -12,9 +12,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 项目配置
+# 项目配置（后续命令均在项目根目录执行，避免路径错误）
 PROJECT_NAME="web-toolkit"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_DIR" || exit 1
 PID_FILE="$PROJECT_DIR/app.pid"
 LOG_DIR="$PROJECT_DIR/logs"
 
@@ -47,6 +48,41 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 加载 .env / .env.prod：需为 shell 可解析的 KEY=value（支持 export KEY=）
+# 使用 set -a 自动 export，避免 export $(grep|xargs) 对空格/特殊字符出错
+load_env_file() {
+    local f="$1"
+    if [ ! -f "$f" ]; then
+        return 1
+    fi
+    log_info "加载环境变量: $f"
+    set -a
+    # shellcheck disable=SC1090
+    source "$f"
+    set +a
+}
+
+# 解析 Redis 密码：当前环境 > .env.prod > .env（仅解析单行，不 source 整文件）
+resolve_redis_password() {
+    if [ -n "${REDIS_PASSWORD:-}" ]; then
+        printf '%s' "$REDIS_PASSWORD"
+        return 0
+    fi
+    local f val
+    for f in "$PROJECT_DIR/.env.prod" "$PROJECT_DIR/.env"; do
+        [ -f "$f" ] || continue
+        val=$(grep -E '^[[:space:]]*REDIS_PASSWORD=' "$f" 2>/dev/null | tail -n1 | sed 's/^[[:space:]]*REDIS_PASSWORD=//')
+        if [ -n "$val" ]; then
+            val="${val%$'\r'}"
+            if [[ "$val" == \"*\" ]]; then val="${val#\"}"; val="${val%\"}"; fi
+            if [[ "$val" == \'*\' ]]; then val="${val#\'}"; val="${val%\'}"; fi
+            printf '%s' "$val"
+            return 0
+        fi
+    done
+    printf ''
+}
+
 # 创建必要的目录
 ensure_dirs() {
     mkdir -p "$LOG_DIR"
@@ -68,18 +104,30 @@ get_port_process() {
     lsof -Pi :$port -sTCP:LISTEN | grep LISTEN
 }
 
-# 停止指定端口的进程
+# 停止指定端口的进程（可能多个 PID）
 kill_port_process() {
     local port=$1
-    local pid=$(lsof -Pi :$port -sTCP:LISTEN -t 2>/dev/null)
-    if [ -n "$pid" ]; then
-        kill -TERM $pid 2>/dev/null || true
-        sleep 2
-        # 如果进程仍在运行，强制杀死
-        if kill -0 $pid 2>/dev/null; then
-            kill -KILL $pid 2>/dev/null || true
+    local before pids pid
+    before=$(lsof -Pi :$port -sTCP:LISTEN -t 2>/dev/null | sort -u | tr '\n' ' ')
+    if [ -z "$before" ]; then
+        return 0
+    fi
+    for pid in $before; do
+        [ -n "$pid" ] || continue
+        kill -TERM "$pid" 2>/dev/null || true
+    done
+    sleep 2
+    pids=$(lsof -Pi :$port -sTCP:LISTEN -t 2>/dev/null | sort -u | tr '\n' ' ')
+    for pid in $pids; do
+        [ -n "$pid" ] || continue
+        if kill -0 "$pid" 2>/dev/null; then
+            kill -KILL "$pid" 2>/dev/null || true
         fi
-        log_success "已停止占用端口 $port 的进程 (PID: $pid)"
+    done
+    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+        log_warning "端口 $port 仍有进程占用"
+    else
+        log_success "已停止占用端口 $port 的进程 (PID: $before)"
     fi
 }
 
@@ -188,20 +236,21 @@ start_prod() {
     ensure_dirs
     
     # 加载环境变量（优先使用 .env.prod）
-    local env_file=".env.prod"
+    local env_file="$PROJECT_DIR/.env.prod"
     if [ ! -f "$env_file" ]; then
-        env_file=".env"
+        env_file="$PROJECT_DIR/.env"
     fi
     
     if [ -f "$env_file" ]; then
-        log_info "加载环境变量从 $env_file..."
-        export $(grep -v '^#' "$env_file" | xargs)
+        load_env_file "$env_file"
+    else
+        log_warning "未找到 .env.prod 或 .env，将仅使用当前 shell 已 export 的变量"
     fi
     
-    # 检查必要的环境变量
-    if [ -z "$REDIS_PASSWORD" ]; then
-        log_warning "REDIS_PASSWORD 未设置，使用默认值"
-        export REDIS_PASSWORD="W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE="
+    # 检查必要的环境变量（禁止在脚本中写死默认密码）
+    if [ -z "${REDIS_PASSWORD:-}" ]; then
+        log_error "start-prod 需要 REDIS_PASSWORD。请在 $PROJECT_DIR/.env.prod 或 .env 中设置（可参考 .env.example）。"
+        return 1
     fi
     
     log_info "生产环境配置："
@@ -318,7 +367,7 @@ EOF
         sleep 2
         
         # 启动新进程
-        if pm2 start ecosystem.config.js; then
+        if pm2 start ecosystem.config.js --env production; then
             log_success "PM2启动成功"
             # 等待启动
             sleep 3
@@ -434,21 +483,39 @@ check_status() {
         fi
     done
     
-    # 检查Redis状态详情
+    # 检查Redis状态详情（有密码时用 REDISCLI_AUTH，避免 -a 出现在进程参数中）
     echo ""
     echo "Redis状态:"
     if check_port $REDIS_PORT; then
         if command -v redis-cli >/dev/null 2>&1; then
-            if redis-cli -p $REDIS_PORT ping >/dev/null 2>&1; then
-                local redis_info=$(redis-cli -p $REDIS_PORT info server 2>/dev/null | head -5)
-                echo -e "  Redis: ${GREEN}运行中${NC}"
-                echo "  Redis版本: $(redis-cli -p $REDIS_PORT info server 2>/dev/null | grep redis_version | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')"
-                local used_memory=$(redis-cli -p $REDIS_PORT info memory 2>/dev/null | grep used_memory_human | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
-                echo "  内存使用: ${used_memory}"
-                local connected_clients=$(redis-cli -p $REDIS_PORT info clients 2>/dev/null | grep connected_clients | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
-                echo "  连接数: ${connected_clients}"
+            local _rp
+            _rp=$(resolve_redis_password)
+            if [ -n "$_rp" ]; then
+                if REDISCLI_AUTH="$_rp" redis-cli -h 127.0.0.1 -p "$REDIS_PORT" ping >/dev/null 2>&1; then
+                    echo -e "  Redis: ${GREEN}运行中${NC}"
+                    echo "  Redis版本: $(REDISCLI_AUTH="$_rp" redis-cli -h 127.0.0.1 -p "$REDIS_PORT" info server 2>/dev/null | grep redis_version | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')"
+                    local used_memory
+                    used_memory=$(REDISCLI_AUTH="$_rp" redis-cli -h 127.0.0.1 -p "$REDIS_PORT" info memory 2>/dev/null | grep used_memory_human | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
+                    echo "  内存使用: ${used_memory}"
+                    local connected_clients
+                    connected_clients=$(REDISCLI_AUTH="$_rp" redis-cli -h 127.0.0.1 -p "$REDIS_PORT" info clients 2>/dev/null | grep connected_clients | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
+                    echo "  连接数: ${connected_clients}"
+                else
+                    echo -e "  Redis: ${RED}连接失败${NC}（已配置密码但认证失败或未匹配）"
+                fi
             else
-                echo -e "  Redis: ${RED}连接失败${NC}"
+                if redis-cli -h 127.0.0.1 -p "$REDIS_PORT" ping >/dev/null 2>&1; then
+                    echo -e "  Redis: ${GREEN}运行中${NC}"
+                    echo "  Redis版本: $(redis-cli -h 127.0.0.1 -p "$REDIS_PORT" info server 2>/dev/null | grep redis_version | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')"
+                    local used_memory
+                    used_memory=$(redis-cli -h 127.0.0.1 -p "$REDIS_PORT" info memory 2>/dev/null | grep used_memory_human | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
+                    echo "  内存使用: ${used_memory}"
+                    local connected_clients
+                    connected_clients=$(redis-cli -h 127.0.0.1 -p "$REDIS_PORT" info clients 2>/dev/null | grep connected_clients | cut -d: -f2 | tr -d '\r' 2>/dev/null || echo '未知')
+                    echo "  连接数: ${connected_clients}"
+                else
+                    echo -e "  Redis: ${RED}连接失败${NC}（若启用了 requirepass，请在环境或 .env 中设置 REDIS_PASSWORD）"
+                fi
             fi
         else
             echo -e "  Redis: ${YELLOW}运行中但redis-cli未安装${NC}"
@@ -547,9 +614,9 @@ show_help() {
     echo "  help          显示此帮助信息"
     echo ""
     echo "Redis相关环境变量:"
-    echo "  REDIS_HOST     Redis服务器地址 (默认: localhost)"
+    echo "  REDIS_HOST     Redis服务器地址 (默认: redis，见 .env)"
     echo "  REDIS_PORT     Redis端口 (默认: 6379)"
-    echo "  REDIS_PASSWORD Redis密码 (默认: 空)"
+    echo "  REDIS_PASSWORD 生产启动 start-prod 必填，勿在脚本中硬编码"
     echo "  REDIS_DB       Redis数据库索引 (默认: 0)"
     echo ""
     echo "示例:"

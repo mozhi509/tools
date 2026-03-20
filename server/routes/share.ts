@@ -35,18 +35,18 @@ router.post('/create', async (req, res) => {
       shareId,
       shareUrl: shareUrl
     });
-  } catch (error: any) {
-    // 生产环境不暴露详细错误信息
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
     if (process.env.NODE_ENV === 'production') {
-      console.error('创建分享失败:', error.message);
+      console.error('创建分享失败:', err.message);
     } else {
       console.error('创建分享失败:', error);
-      console.error('错误堆栈:', error.stack);
+      console.error('错误堆栈:', err.stack);
       console.error('请求体:', req.body);
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: '服务器内部错误',
-      ...(process.env.NODE_ENV !== 'production' && { details: error.message })
+      ...(process.env.NODE_ENV !== 'production' && { details: err.message }),
     });
   }
 });
@@ -74,15 +74,16 @@ router.get('/:shareId', async (req, res) => {
       createdAt: parsedData.createdAt,
       type: parsedData.type
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
     if (process.env.NODE_ENV === 'production') {
-      console.error('获取分享数据失败:', error.message);
+      console.error('获取分享数据失败:', err.message);
     } else {
       console.error('获取分享数据失败:', error);
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: '服务器内部错误',
-      ...(process.env.NODE_ENV !== 'production' && { details: error.message })
+      ...(process.env.NODE_ENV !== 'production' && { details: err.message }),
     });
   }
 });

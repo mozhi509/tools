@@ -90,12 +90,19 @@ cd client && npm install
 ### 开发模式运行
 
 ```bash
-# 同时启动前后端开发服务器
+# 同时启动前后端开发服务器（不自动起 Redis，需本机已有 Redis 或 Docker）
 npm run dev
 
-# 或者分别启动
-npm run server  # 启动后端服务器 (端口 3001)
-npm run client  # 启动前端开发服务器 (端口 3000)
+# 一键：若 6379 空闲则启动 Redis + 前后端（优先本机 redis-server，否则用 Docker 起一个 Redis）
+npm run dev:local
+```
+
+依赖说明：**Redis**（聊天等功能需要）。本地可先 `brew install redis && brew services start redis`，再 `npm run dev`；或直接 `npm run dev:local`。若 `.env` 里给 Redis 设置了 `requirepass`，请保证本地 Redis 配置与 `REDIS_PASSWORD` 一致，或开发环境暂时留空密码并使用无密码的本地实例。
+
+```bash
+# 或者分别启动（开发）
+npm run server:dev  # 后端 ts-node（端口 3001）
+npm run client      # 前端 webpack（端口 3000）
 ```
 
 ### 生产环境部署
@@ -110,6 +117,34 @@ export NODE_ENV=production
 # 启动生产服务器
 npm start
 ```
+
+### Docker Compose / PM2
+
+敏感配置（如 **`REDIS_PASSWORD`**）仅从环境变量读取，**仓库内不设默认密钥**。部署前请在项目根目录创建 `.env`（可参考 `.env.example`）并填写 `REDIS_PASSWORD`。
+
+```bash
+# Docker
+docker compose up -d --build
+
+# 或使用脚本（读取 .env.prod 或 .env，PM2 使用 --env production）
+./manage.sh start-prod
+```
+
+### 单元测试
+
+```bash
+# 一次性跑完全部测试（后端 Jest + 前端 CRA）
+npm run test
+
+# 仅后端（server/tests，supertest + 路由）
+npm run test:server
+
+# 仅前端（client/src 下 *.test.ts / *.test.tsx）
+npm run test:client
+```
+
+- **后端**：`server/tests/` 覆盖 `tools` / `health` / `share` / `chat` 等路由（Redis 相关用 Jest mock）。
+- **前端**：`client/src/setupTests.ts` 引入 `@testing-library/jest-dom`；`react-router-dom` 在 Jest 中通过 `client/__mocks__/react-router-dom.tsx` 与 `package.json` 的 `jest.moduleNameMapper` 指向该 mock，以兼容 React Router v7。
 
 ## API接口
 

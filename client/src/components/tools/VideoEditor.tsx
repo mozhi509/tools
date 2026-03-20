@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
-import axios from 'axios';
+import { API_ENDPOINTS, resolveApiAssetUrl } from '../../config/api';
 
 interface VideoClip {
   id: string;
@@ -84,23 +84,24 @@ const VideoEditor: React.FC = () => {
         const formData = new FormData();
         formData.append('video', file);
         
-        const response = await axios.post('/api/video/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+        const response = await fetch(API_ENDPOINTS.video.upload, {
+          method: 'POST',
+          body: formData,
         });
-        
-        if (response.data.success) {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
           const url = URL.createObjectURL(file);
           setVideoUrl(url);
-          setUploadedVideoPath(response.data.video.filename);
+          setUploadedVideoPath(data.video.filename);
           setClips([]);
           setSelectedClip(null);
           setIsTrimming(false);
+        } else {
+          alert('视频上传失败: ' + (data.error || response.statusText || '未知错误'));
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Upload failed:', error);
-        alert('视频上传失败: ' + (error.response?.data?.error || error.message));
+        alert('视频上传失败: ' + (error instanceof Error ? error.message : String(error)));
       } finally {
         setUploading(false);
       }
@@ -156,26 +157,32 @@ const VideoEditor: React.FC = () => {
   const endTrim = async () => {
     if (trimEnd > trimStart && trimEnd - trimStart > 1 && uploadedVideoPath) {
       try {
-        const response = await axios.post('/api/video/trim', {
-          videoPath: uploadedVideoPath,
-          startTime: trimStart,
-          endTime: trimEnd,
-          outputName: `clip-${Date.now()}`
+        const response = await fetch(API_ENDPOINTS.video.trim, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            videoPath: uploadedVideoPath,
+            startTime: trimStart,
+            endTime: trimEnd,
+            outputName: `clip-${Date.now()}`,
+          }),
         });
-        
-        if (response.data.success) {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
           const newClip: VideoClip = {
             id: Date.now().toString(),
             startTime: trimStart,
             endTime: trimEnd,
             name: `片段 ${clips.length + 1}`,
-            processedUrl: response.data.videoUrl
+            processedUrl: data.videoUrl,
           };
           setClips([...clips, newClip]);
+        } else {
+          alert('视频剪辑失败: ' + (data.error || response.statusText || '未知错误'));
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Trim failed:', error);
-        alert('视频剪辑失败: ' + (error.response?.data?.error || error.message));
+        alert('视频剪辑失败: ' + (error instanceof Error ? error.message : String(error)));
       }
     }
     setIsTrimming(false);
@@ -216,28 +223,33 @@ const VideoEditor: React.FC = () => {
     
     try {
       const videoPaths = clips.map(clip => clip.processedUrl || uploadedVideoPath);
-      const response = await axios.post('/api/video/merge', {
-        videoPaths: videoPaths,
-        outputName: `merged-${Date.now()}`
+      const response = await fetch(API_ENDPOINTS.video.merge, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoPaths,
+          outputName: `merged-${Date.now()}`,
+        }),
       });
-      
-      if (response.data.success) {
-        // 创建合并后的视频URL供下载
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success) {
         const link = document.createElement('a');
-        link.href = `http://localhost:3001${response.data.videoUrl}`;
+        link.href = resolveApiAssetUrl(data.videoUrl);
         link.download = `merged-video-${Date.now()}.mp4`;
         link.click();
+      } else {
+        alert('视频合并失败: ' + (data.error || response.statusText || '未知错误'));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Merge failed:', error);
-      alert('视频合并失败: ' + (error.response?.data?.error || error.message));
+      alert('视频合并失败: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
   const downloadClip = (clip: VideoClip) => {
     if (clip.processedUrl) {
       const link = document.createElement('a');
-      link.href = `http://localhost:3001${clip.processedUrl}`;
+      link.href = resolveApiAssetUrl(clip.processedUrl);
       link.download = `${clip.name}-${Date.now()}.mp4`;
       link.click();
     } else {

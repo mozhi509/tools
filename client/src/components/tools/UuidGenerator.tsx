@@ -29,21 +29,19 @@ const UuidGenerator: React.FC = () => {
     if (version === 'v4') {
       // UUID v4 - 随机
       uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : ((r & 0x3) | 0x8);
         return v.toString(16);
       });
     } else {
       // UUID v1 - 基于时间戳
-      const timestamp = Date.now();
-      const random = Math.floor(Math.random() * 0xFFFFFF);
       uuid = 'xxxxxxxx-xxxx-1xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         if (c === 'x') {
           const r = Math.floor(Math.random() * 16);
           return r.toString(16);
         } else {
           const r = Math.floor(Math.random() * 16);
-          const v = r & 0x3 | 0x8;
+          const v = (r & 0x3) | 0x8;
           return v.toString(16);
         }
       });

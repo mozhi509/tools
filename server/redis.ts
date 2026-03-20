@@ -14,7 +14,11 @@ const getRedisConfig = () => {
   const password = process.env.REDIS_PASSWORD;
   const db = parseInt(process.env.REDIS_DB || '0', 10);
 
-  const config: any = {
+  const config: {
+    socket: { host: string; port: number; connectTimeout: number; lazyConnect: boolean; family: number };
+    database: number;
+    password?: string;
+  } = {
     socket: {
       host,
       port,
@@ -25,7 +29,6 @@ const getRedisConfig = () => {
     database: db,
   };
 
-  // 如果有密码，添加认证
   if (password) {
     config.password = password;
   }

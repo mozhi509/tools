@@ -8,7 +8,6 @@
     "@testing-library/user-event": "^14.5.2",
     "@types/react-router-dom": "^5.3.3",
     "antd": "^6.1.0",
-    "axios": "^1.13.2",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -22,6 +21,11 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/__mocks__/react-router-dom.tsx"
+    }
   },
   "eslintConfig": {
     "extends": [

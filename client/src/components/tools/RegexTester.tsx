@@ -8,16 +8,18 @@ const RegexTester: React.FC = () => {
   const [matches, setMatches] = useState<RegExpMatchArray[]>([]);
   const [error, setError] = useState<string>('');
 
+  /* eslint-disable no-useless-escape -- 作为 RegExp 源码的字符串，保留转义 */
   const commonPatterns = [
-    { name: '邮箱', pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$' },
-    { name: '手机号', pattern: '^1[3-9]\d{9}$' },
-    { name: 'URL', pattern: 'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)' },
-    { name: 'IP地址', pattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$' },
-    { name: '身份证', pattern: '^\d{15}|\d{18}|\d{17}[Xx]$' },
+    { name: '邮箱', pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$' },
+    { name: '手机号', pattern: '^1[3-9]\\d{9}$' },
+    { name: 'URL', pattern: 'https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)' },
+    { name: 'IP地址', pattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$' },
+    { name: '身份证', pattern: '^\\d{15}|\\d{18}|\\d{17}[Xx]$' },
     { name: '中文', pattern: '[\u4e00-\u9fa5]+' },
-    { name: '数字', pattern: '\d+' },
+    { name: '数字', pattern: '\\d+' },
     { name: '字母', pattern: '[a-zA-Z]+' },
   ];
+  /* eslint-enable no-useless-escape */
 
   const testRegex = () => {
     if (!pattern) {

@@ -35,7 +35,7 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV REDIS_HOST=redis
 ENV REDIS_PORT=6379
-ENV REDIS_PASSWORD=W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=
+# REDIS_PASSWORD 由 docker-compose / 运行时 -e 注入，勿在镜像中写死
 ENV REDIS_DB=0
 ENV MAX_MEMORY_RESTART=1G
 ENV NODE_MAX_OLD_SPACE_SIZE=1024
@@ -47,4 +47,4 @@ RUN npm install -g pm2
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3001/api/health || exit 1
 
-CMD ["pm2-runtime", "start", "ecosystem.config.js"]
+CMD ["pm2-runtime", "start", "ecosystem.config.js", "--env", "production"]

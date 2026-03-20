@@ -76,8 +76,8 @@ router.post('/create', async (req: Request, res: Response) => {
       chatUrl: `${getBaseUrl(req)}${chatPath}`,
       clientId: createdBy,
     });
-  } catch (error: any) {
-    console.error('创建聊天失败:', error?.message || error);
+  } catch (error: unknown) {
+    console.error('创建聊天失败:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: '创建聊天失败' });
   }
 });
@@ -94,8 +94,8 @@ router.post('/:chatId/join', async (req: Request<{ chatId: string }>, res: Respo
 
     const clientId = getClientFingerprint(req);
     res.json({ success: true, chatId, clientId });
-  } catch (error: any) {
-    console.error('加入聊天失败:', error?.message || error);
+  } catch (error: unknown) {
+    console.error('加入聊天失败:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: '加入聊天失败' });
   }
 });
@@ -113,8 +113,8 @@ router.get('/:chatId/messages', async (req: Request<{ chatId: string }>, res: Re
     const rawMessages = await redisClient.lRange(messagesKey(chatId), 0, -1);
     const messages: ChatMessage[] = rawMessages.map((item) => JSON.parse(item) as ChatMessage);
     res.json({ success: true, messages });
-  } catch (error: any) {
-    console.error('获取消息失败:', error?.message || error);
+  } catch (error: unknown) {
+    console.error('获取消息失败:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: '获取消息失败' });
   }
 });
@@ -151,8 +151,8 @@ router.post('/:chatId/messages', async (req: Request<{ chatId: string }>, res: R
     await redisClient.expire(messagesKey(chatId), CHAT_EXPIRE_SECONDS);
 
     res.json({ success: true, message });
-  } catch (error: any) {
-    console.error('发送消息失败:', error?.message || error);
+  } catch (error: unknown) {
+    console.error('发送消息失败:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: '发送消息失败' });
   }
 });

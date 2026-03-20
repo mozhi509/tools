@@ -7,7 +7,8 @@ services:
     ports:
       - "6379:6379"
     environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=}
+      # 必须在 .env 中设置 REDIS_PASSWORD（勿提交真实密码到 Git）
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?Set REDIS_PASSWORD in project root .env (see .env.example)}
     volumes:
       - redis_data:/data
       - ./redis-prod.conf:/usr/local/etc/redis/redis.conf
@@ -42,7 +43,7 @@ services:
       - PORT=3001
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-W0g5u3T8eXq4VZn0EjrviDaWFG7bp916a8Gy/8C2+rE=}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?Set REDIS_PASSWORD in project root .env (see .env.example)}
       - REDIS_DB=${REDIS_DB:-0}
       - MAX_MEMORY_RESTART=${MAX_MEMORY_RESTART:-1G}
       - NODE_MAX_OLD_SPACE_SIZE=${NODE_MAX_OLD_SPACE_SIZE:-1024}

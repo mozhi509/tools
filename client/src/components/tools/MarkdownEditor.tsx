@@ -159,8 +159,8 @@ function hello() {
     // 无序列表 - 简化处理
     const lines = html.split('\n');
     const processedLines = lines.map(line => {
-      if (line.match(/^[\*\-] (.+)$/)) {
-        return '<li>' + line.replace(/^[\*\-] /, '') + '</li>';
+      if (line.match(/^[*-] (.+)$/)) {
+        return '<li>' + line.replace(/^[*-] /, '') + '</li>';
       }
       return line;
     });

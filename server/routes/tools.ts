@@ -35,11 +35,11 @@ router.post('/json/format', (req: Request<{}, JsonFormatResponse, JsonRequest>, 
       formatted: formatted,
       original: json
     });
-  } catch (error: any) {
-    res.status(400).json({ 
+  } catch (error: unknown) {
+    res.status(400).json({
       success: false,
       error: 'JSON格式错误',
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -63,11 +63,11 @@ router.post('/json/validate', (req: Request<{}, JsonValidateResponse, JsonReques
       valid: true,
       message: 'JSON格式正确'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.json({
       success: true,
       valid: false,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 });
@@ -92,12 +92,13 @@ router.post('/json/minify', (req: Request<{}, JsonMinifyResponse, JsonRequest>, 
       minified: minified,
       original: json
     });
-  } catch (error: any) {
-    console.log('Error:', error.message);
-    res.status(400).json({ 
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.log('Error:', msg);
+    res.status(400).json({
       success: false,
       error: 'JSON格式错误',
-      details: error.message 
+      details: msg,
     });
   }
 });
@@ -121,10 +122,10 @@ router.post('/base64/encode', (req: Request<{}, Base64EncodeResponse, Base64Requ
       encoded: encoded,
       original: text
     });
-  } catch (error) {
-    res.status(500).json({ 
+  } catch (error: unknown) {
+    res.status(500).json({
       success: false,
-      error: '编码失败' 
+      error: '编码失败',
     });
   }
 });
@@ -148,10 +149,10 @@ router.post('/base64/decode', (req: Request<{}, Base64DecodeResponse, Base64Deco
       decoded: decoded,
       original: encoded
     });
-  } catch (error) {
-    res.status(400).json({ 
+  } catch (error: unknown) {
+    res.status(400).json({
       success: false,
-      error: 'Base64格式错误或解码失败' 
+      error: 'Base64格式错误或解码失败',
     });
   }
 });
@@ -175,10 +176,10 @@ router.post('/url/encode', (req: Request<{}, UrlEncodeResponse, UrlRequest>, res
       encoded: encoded,
       original: url
     });
-  } catch (error) {
-    res.status(500).json({ 
+  } catch (error: unknown) {
+    res.status(500).json({
       success: false,
-      error: 'URL编码失败' 
+      error: 'URL编码失败',
     });
   }
 });
@@ -202,10 +203,10 @@ router.post('/url/decode', (req: Request<{}, UrlDecodeResponse, UrlRequest>, res
       decoded: decoded,
       original: url
     });
-  } catch (error) {
-    res.status(400).json({ 
+  } catch (error: unknown) {
+    res.status(400).json({
       success: false,
-      error: 'URL格式错误或解码失败' 
+      error: 'URL格式错误或解码失败',
     });
   }
 });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Copy, X, Share2 } from 'lucide-react';
 import { copyWithFeedback } from '../../utils/clipboard';
+import { API_ENDPOINTS } from '../../config/api';
 import ToolNavigation from '../ToolNavigation';
 import { getThemeColors } from '../themes';
 
@@ -159,7 +160,7 @@ const JsonFormatter: React.FC = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('/api/tools/json/format', {
+      const response = await fetch(API_ENDPOINTS.json.format, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +228,7 @@ const JsonFormatter: React.FC = () => {
 
     setProcessing(true);
     try {
-      const response = await fetch('/api/tools/json/validate', {
+      const response = await fetch(API_ENDPOINTS.json.validate, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -292,7 +293,7 @@ const JsonFormatter: React.FC = () => {
       console.log('activeTab.content:', activeTab.content);
       console.log('activeTab.output:', activeTab.output);
       
-      const response = await fetch('/api/share/create', {
+      const response = await fetch(API_ENDPOINTS.share.create, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -328,7 +329,7 @@ const JsonFormatter: React.FC = () => {
 
   const loadSharedJson = async (shareId: string) => {
     try {
-      const response = await fetch(`/api/share/${shareId}`);
+      const response = await fetch(API_ENDPOINTS.share.get(shareId));
       const result = await response.json();
       
       if (result.success) {
@@ -382,6 +383,7 @@ const JsonFormatter: React.FC = () => {
         loadSharedJson(queryShareId);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅响应路由 shareId / 查询参数，避免 loadSharedJson 引用变化导致重复拉取
   }, [shareId]);
 
   const renderJsonTree = (data: any, path: string = '', indent: number = 0, expandedNodes?: Set<string>, onToggle?: (path: string) => void): React.ReactNode => {
