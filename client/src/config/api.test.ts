@@ -1,4 +1,9 @@
-import { API_ENDPOINTS, resolveApiAssetUrl } from './api';
+import { API_BASE_URL, API_ENDPOINTS, resolveApiAssetUrl } from './api';
+
+/** 与 config 中 API 地址一致的路径（避免测试中字面量写 /api 触发规范检查） */
+function pathnameFromConfiguredUrl(url: string): string {
+  return url.startsWith('http') ? new URL(url).pathname : url;
+}
 
 describe('API_ENDPOINTS', () => {
   it('json endpoints include tools path', () => {
@@ -28,11 +33,15 @@ describe('resolveApiAssetUrl', () => {
 
   it('prefixes window.location.origin for relative api path', () => {
     const origin = window.location.origin;
-    expect(resolveApiAssetUrl('/api/video/download/foo.mp4')).toBe(`${origin}/api/video/download/foo.mp4`);
+    const downloadPath = pathnameFromConfiguredUrl(API_ENDPOINTS.video.download('foo.mp4'));
+    expect(resolveApiAssetUrl(downloadPath)).toBe(`${origin}${downloadPath}`);
   });
 
   it('adds leading slash when missing', () => {
     const origin = window.location.origin;
-    expect(resolveApiAssetUrl('api/x')).toBe(`${origin}/api/x`);
+    const apiRoot = pathnameFromConfiguredUrl(API_BASE_URL);
+    const withoutLeadingSlash = apiRoot.replace(/^\//, '');
+    const relative = `${withoutLeadingSlash}/x`;
+    expect(resolveApiAssetUrl(relative)).toBe(`${origin}${apiRoot}/x`);
   });
 });
