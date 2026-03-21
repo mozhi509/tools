@@ -118,6 +118,20 @@ export NODE_ENV=production
 npm start
 ```
 
+**卡在 `Creating an optimized production build...`？** 多半是 **内存不够**（Webpack 吃内存，小机器/容器会被 OOM 杀进程，看起来像「死掉」）或 **其实还在跑只是很慢**。也可用 `top`/`htop` 看 `node` 是否占满 CPU、是否被系统杀进程（`dmesg | grep -i oom`）。
+
+**降低前端编译内存占用（CRA / `react-scripts build`）常用手段：**
+
+| 手段 | 说明 |
+|------|------|
+| `GENERATE_SOURCEMAP=false` | 不生成 source map，**省内存、省时间**（本项目 `client` 的 `build` 已开启） |
+| `DISABLE_ESLINT_PLUGIN=true` | 构建时**不跑 ESLint**，减轻内存与耗时（本项目 `build` 已开启；发布前可本地再单独 `npm run lint` 若你配置了 lint） |
+| 控制 Node 堆上限 | `NODE_OPTIONS=--max-old-space-size=...`：过小易 OOM，过大不一定更省内存，按机器调整 |
+| 在更大内存机器上构建 | CI / 本机 build 再上传 `client/build`，小内存服务器只跑 `node` 不提供 Webpack |
+| 换 Vite 等构建工具 | 需改工程，内存通常更友好，工作量大 |
+
+若仍 OOM，可在构建前再加大堆：`export NODE_OPTIONS=--max-old-space-size=8192`，或换更大内存环境。
+
 ### Docker Compose / PM2
 
 敏感配置（如 **`REDIS_PASSWORD`**）仅从环境变量读取，**仓库内不设默认密钥**。部署前请在项目根目录创建 `.env`（可参考 `.env.example`）并填写 `REDIS_PASSWORD`。
