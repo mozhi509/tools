@@ -1,17 +1,18 @@
-import { createClient } from 'redis';
+import { createClient, type RedisClientType } from 'redis';
 
-// 构建Redis连接配置
+/**
+ * 延迟创建客户端：须在加载完根目录 .env 后再读取 REDIS_PASSWORD。
+ * index.ts 第一行应 import './loadEnv'。
+ */
 const getRedisConfig = () => {
-  // 强制使用 IPv4 地址，避免 IPv6 解析问题
   let host = process.env.REDIS_HOST || '127.0.0.1';
-  
-  // 确保 host 是 IPv4 格式
+
   if (host === 'localhost') {
     host = '127.0.0.1';
   }
-  
+
   const port = parseInt(process.env.REDIS_PORT || '6379', 10);
-  const password = process.env.REDIS_PASSWORD;
+  const password = process.env.REDIS_PASSWORD?.trim();
   const db = parseInt(process.env.REDIS_DB || '0', 10);
 
   const config: {
@@ -22,9 +23,9 @@ const getRedisConfig = () => {
     socket: {
       host,
       port,
-      connectTimeout: 10000, // 10秒连接超时
-      lazyConnect: true, // 延迟连接
-      family: 4, // 强制使用 IPv4
+      connectTimeout: 10000,
+      lazyConnect: true,
+      family: 4,
     },
     database: db,
   };
@@ -36,32 +37,54 @@ const getRedisConfig = () => {
   return config;
 };
 
-const redisClient = createClient(getRedisConfig());
+let _client: RedisClientType | null = null;
 
-redisClient.on('error', (err) => {
-  console.error('Redis Client Error:', err);
-});
+function getOrCreateClient(): RedisClientType {
+  if (!_client) {
+    _client = createClient(getRedisConfig());
+    _client.on('error', (err) => {
+      console.error('Redis Client Error:', err);
+    });
+    _client.on('connect', () => {
+      console.log('Connected to Redis');
+    });
+    _client.on('ready', () => {
+      console.log('Redis client ready');
+    });
+    _client.on('end', () => {
+      console.log('Redis client disconnected');
+    });
+  }
+  return _client;
+}
 
-redisClient.on('connect', () => {
-  console.log('Connected to Redis');
-});
-
-redisClient.on('ready', () => {
-  console.log('Redis client ready');
-});
-
-redisClient.on('end', () => {
-  console.log('Redis client disconnected');
+/** 与真实 redis 客户端行为一致，首次访问时再创建（此时已加载 .env） */
+export const redisClient = new Proxy({} as RedisClientType, {
+  get(_target, prop, receiver) {
+    const c = getOrCreateClient();
+    const value = Reflect.get(c, prop, receiver);
+    if (typeof value === 'function') {
+      return value.bind(c);
+    }
+    return value;
+  },
 });
 
 export const connectRedis = async () => {
   try {
-    if (!redisClient.isOpen) {
+    const c = getOrCreateClient();
+    if (!c.isOpen) {
       console.log('Connecting to Redis...');
-      await redisClient.connect();
+      await c.connect();
       console.log('Redis connected successfully');
     }
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (/NOAUTH|Authentication required/i.test(msg)) {
+      console.error(
+        'Redis NOAUTH：请确认根目录 .env / .env.prod 中 REDIS_PASSWORD 与 redis requirepass 一致，并已 npm install dotenv。'
+      );
+    }
     console.error('Failed to connect to Redis:', error);
     throw error;
   }
@@ -69,8 +92,9 @@ export const connectRedis = async () => {
 
 export const disconnectRedis = async () => {
   try {
-    if (redisClient.isOpen) {
-      await redisClient.disconnect();
+    const c = getOrCreateClient();
+    if (c.isOpen) {
+      await c.disconnect();
       console.log('Redis disconnected successfully');
     }
   } catch (error) {
@@ -78,11 +102,10 @@ export const disconnectRedis = async () => {
   }
 };
 
-// 测试连接的辅助函数
 export const testRedisConnection = async (): Promise<boolean> => {
   try {
     await connectRedis();
-    await redisClient.ping();
+    await getOrCreateClient().ping();
     console.log('Redis ping test successful');
     return true;
   } catch (error) {
@@ -90,5 +113,3 @@ export const testRedisConnection = async (): Promise<boolean> => {
     return false;
   }
 };
-
-export { redisClient };

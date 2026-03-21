@@ -99,6 +99,8 @@ npm run dev:local
 
 依赖说明：**Redis**（聊天等功能需要）。本地可先 `brew install redis && brew services start redis`，再 `npm run dev`；或直接 `npm run dev:local`。若 `.env` 里给 Redis 设置了 `requirepass`，请保证本地 Redis 配置与 `REDIS_PASSWORD` 一致，或开发环境暂时留空密码并使用无密码的本地实例。
 
+**本地密码只配在 `.env`：** 开发时 `loadEnv` **仅加载** `.env`；只有 `NODE_ENV=production` 时才会再加载 `.env.prod`（避免 `.env.prod` 里的占位符覆盖你本地的 `REDIS_PASSWORD`）。
+
 ```bash
 # 或者分别启动（开发）
 npm run server:dev  # 后端 ts-node（端口 3001）
