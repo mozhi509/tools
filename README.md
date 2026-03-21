@@ -90,10 +90,10 @@ cd client && npm install
 ### 开发模式运行
 
 ```bash
-# 同时启动前后端开发服务器（不自动起 Redis，需本机已有 Redis 或 Docker）
+# 同时启动前后端开发服务器（不自动起 Redis，需本机已安装并启动 Redis）
 npm run dev
 
-# 一键：若 6379 空闲则启动 Redis + 前后端（优先本机 redis-server，否则用 Docker 起一个 Redis）
+# 一键：若 6379 空闲则本机 redis-server + 前后端（需已安装 redis-server）
 npm run dev:local
 ```
 
@@ -134,17 +134,28 @@ npm start
 
 若仍 OOM，可在构建前再加大堆：`export NODE_OPTIONS=--max-old-space-size=8192`，或换更大内存环境。
 
-### Docker Compose / PM2
+### 生产部署（PM2 / manage.sh）
 
-敏感配置（如 **`REDIS_PASSWORD`**）仅从环境变量读取，**仓库内不设默认密钥**。部署前请在项目根目录创建 `.env`（可参考 `.env.example`）并填写 `REDIS_PASSWORD`。
+敏感配置（如 **`REDIS_PASSWORD`**）仅从环境变量读取，**仓库内不设默认密钥**。部署前请在项目根目录创建 `.env` 或 `.env.prod`（可参考 `.env.example`）并填写 `REDIS_PASSWORD`。
 
 ```bash
-# Docker
-docker compose up -d --build
+# 一键：安装依赖 → 构建 → 启动 Redis → 启动后端（PM2 或 node）
+./manage.sh up
+# 等价：npm run up
 
-# 或使用脚本（读取 .env.prod 或 .env，PM2 使用 --env production）
-./manage.sh start-prod
+# 分步
+./manage.sh install      # 根目录 + client：npm install
+./manage.sh build        # npm run build（与 package.json 一致）
+./manage.sh start-redis  # 仅本机 Redis（读 .env / .env.prod）
+./manage.sh start-prod   # 已有 dist/client/build 时只起生产（含 Redis）
+
+./manage.sh status
+./manage.sh stop          # 或 ./manage.sh down（一键停止，与 up 对应）
+./manage.sh restart       # 一键重启生产（等同 restart-prod）
+# npm run down / npm run restart
 ```
+
+`start-prod` / `up` / `start-redis` 会优先加载 `.env.prod`，不存在则用 `.env`。
 
 ### 单元测试
 

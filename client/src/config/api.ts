@@ -1,6 +1,10 @@
-export const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? '/api'
-  : 'http://localhost:3001/api';
+/**
+ * 始终使用同源 `/api`：
+ * - 开发：`setupProxy.js` 将 `/api` 转到 `http://localhost:3001`
+ * - 生产：与 Express 静态站同源
+ * 避免开发时直连 3001 与页面 host（localhost / 127.0.0.1）不一致导致 CORS 或 Failed to fetch。
+ */
+export const API_BASE_URL = '/api';
 
 export const API_ENDPOINTS = {
   json: {

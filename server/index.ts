@@ -2,7 +2,6 @@ import './loadEnv';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 import toolsRouter from './routes/tools';
 import videoRouter from './routes/video';
@@ -22,8 +21,7 @@ function getProductionCorsOrigins(): string[] {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 勿使用 trust proxy: true —— express-rate-limit 会报 ERR_ERL_PERMISSIVE_TRUST_PROXY。
-// 前面有几层反代（通常 Nginx=1），用数字；本地直连 Node 用 false。
+// 前面有几层反代（通常 Nginx=1）时设 TRUST_PROXY_HOPS；本地直连 Node 用 0/false。
 const trustProxyHops =
   process.env.NODE_ENV === 'production'
     ? Number(process.env.TRUST_PROXY_HOPS ?? 1)
@@ -42,17 +40,7 @@ app.use(helmet({
   },
 }));
 
-// 速率限制
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15分钟
-  max: 100, // 限制每个IP 15分钟内最多100个请求
-  message: { error: '请求过于频繁，请稍后再试' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/', limiter);
-
-// 中间件
+// 中间件（未启用 express 层限流；若需防护请在网关/Nginx/CDN 配置）
 app.use(
   cors({
     origin:

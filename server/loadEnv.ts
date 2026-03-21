@@ -2,7 +2,7 @@
  * 必须在其它 server 模块之前加载，确保 process.env 含根目录 .env。
  *
  * 本地开发：只读 `.env`（例如 REDIS_PASSWORD=123456），**不会**再被 `.env.prod` 覆盖。
- * 生产：在 NODE_ENV=production 时再加载 `.env.prod`（override），与 PM2 / Docker 一致。
+ * 生产：在 NODE_ENV=production 时再加载 `.env.prod`（override），与 PM2 等一致。
  */
 import path from 'path';
 import dotenv from 'dotenv';

@@ -26,21 +26,7 @@ if command -v redis-server >/dev/null 2>&1; then
     "npm run dev"
 fi
 
-if command -v docker >/dev/null 2>&1; then
-  echo "[dev-local] 未检测到 redis-server，使用 Docker 在本机端口 ${REDIS_PORT} 启动 Redis…"
-  docker rm -f web-toolkit-redis-local 2>/dev/null || true
-  docker run -d --name web-toolkit-redis-local -p "${REDIS_PORT}:6379" redis:7-alpine
-  cleanup() {
-    docker stop web-toolkit-redis-local >/dev/null 2>&1 || true
-    docker rm web-toolkit-redis-local >/dev/null 2>&1 || true
-  }
-  trap cleanup EXIT INT TERM
-  npm run dev
-  cleanup
-  exit 0
-fi
-
-echo "[dev-local] 错误：未找到 redis-server 且未安装 Docker。"
-echo "  macOS: brew install redis"
-echo "  或安装 Docker 后重试。"
+echo "[dev-local] 错误：未找到 redis-server，无法在本机启动 Redis。"
+echo "  macOS: brew install redis && brew services start redis"
+echo "  Linux: apt/yum 安装 redis-server 或从源码安装后重试。"
 exit 1

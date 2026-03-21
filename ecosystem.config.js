@@ -5,7 +5,7 @@
  *   set -a && source .env.prod && set +a && pm2 start ecosystem.config.js --env production
  * 或使用 ./manage.sh start-prod
  *
- * Docker：由 docker-compose 注入 REDIS_PASSWORD，见 Dockerfile CMD。
+ * 生产：先加载 .env / .env.prod 再 pm2 start，或依赖宿主已 export 的 REDIS_*。
  */
 
 function intEnv(name, fallback) {
@@ -35,7 +35,7 @@ module.exports = {
     env_production: {
       NODE_ENV: 'production',
       PORT: intEnv('PORT', 3001),
-      REDIS_HOST: process.env.REDIS_HOST || 'redis',
+      REDIS_HOST: process.env.REDIS_HOST || '127.0.0.1',
       REDIS_PORT: intEnv('REDIS_PORT', 6379),
       REDIS_PASSWORD: redisPassword,
       REDIS_DB: intEnv('REDIS_DB', 0),
@@ -47,7 +47,7 @@ module.exports = {
     env_staging: {
       NODE_ENV: 'staging',
       PORT: intEnv('PORT', 3001),
-      REDIS_HOST: process.env.REDIS_HOST || 'redis',
+      REDIS_HOST: process.env.REDIS_HOST || '127.0.0.1',
       REDIS_PORT: intEnv('REDIS_PORT', 6379),
       REDIS_PASSWORD: redisPassword,
       REDIS_DB: intEnv('REDIS_DB', 0),

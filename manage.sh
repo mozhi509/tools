@@ -146,6 +146,103 @@ wait_for_port() {
     fi
 }
 
+# 加载 .env.prod 优先，否则 .env（供 start-prod / start-redis / up 使用）
+load_stack_env() {
+    local env_file="$PROJECT_DIR/.env.prod"
+    if [ ! -f "$env_file" ]; then
+        env_file="$PROJECT_DIR/.env"
+    fi
+    if [ -f "$env_file" ]; then
+        load_env_file "$env_file"
+    else
+        log_warning "未找到 .env.prod 或 .env，将仅使用当前 shell 已 export 的变量"
+    fi
+    REDIS_PORT="${REDIS_PORT:-6379}"
+}
+
+# 安装根目录 + client 依赖
+install_deps() {
+    log_info "安装根目录 npm 依赖..."
+    npm install
+    log_info "安装 client npm 依赖..."
+    (cd "$PROJECT_DIR/client" && npm install)
+    log_success "依赖安装完成"
+}
+
+# 构建（与 package.json build 一致）
+run_build() {
+    log_info "执行 npm run build（TypeScript + React）..."
+    (cd "$PROJECT_DIR" && npm run build)
+    log_success "构建完成"
+}
+
+# 确保本机 Redis 已监听且密码与 REDIS_PASSWORD 一致（需已设置 REDIS_PASSWORD）
+ensure_redis_running() {
+    if [ -z "${REDIS_PASSWORD:-}" ]; then
+        log_error "需要 REDIS_PASSWORD。请在 $PROJECT_DIR/.env 或 .env.prod 中设置（见 .env.example）。"
+        return 1
+    fi
+
+    if check_port "$REDIS_PORT"; then
+        log_warning "Redis 端口 $REDIS_PORT 已被占用:"
+        get_port_process "$REDIS_PORT"
+        read -p "是否停止占用进程? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            kill_port_process "$REDIS_PORT"
+        else
+            log_warning "跳过启动 Redis，仅检测已有实例"
+        fi
+    fi
+
+    if ! check_port "$REDIS_PORT"; then
+        if ! command -v redis-server >/dev/null 2>&1; then
+            log_error "未找到 redis-server，请先安装 Redis（如 macOS: brew install redis）"
+            return 1
+        fi
+        log_info "启动 Redis（requirepass 来自环境变量）..."
+        cat > "$LOG_DIR/redis-prod.conf" << EOF
+bind 127.0.0.1
+port $REDIS_PORT
+daemonize yes
+pidfile $LOG_DIR/redis_6379.pid
+logfile $LOG_DIR/redis.log
+dbfilename dump.rdb
+dir $LOG_DIR/
+requirepass $REDIS_PASSWORD
+save 900 1
+save 300 10
+save 60 10000
+appendonly yes
+appendfilename appendonly.aof
+appendfsync everysec
+maxmemory 256mb
+maxmemory-policy allkeys-lru
+EOF
+        log_info "Redis 配置文件: $LOG_DIR/redis-prod.conf（模板参考: $PROJECT_DIR/redis-prod.conf）"
+        nohup redis-server "$LOG_DIR/redis-prod.conf" > "$LOG_DIR/redis-startup.log" 2>&1 &
+        sleep 3
+        if check_port "$REDIS_PORT"; then
+            if redis-cli -h 127.0.0.1 -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping >/dev/null 2>&1; then
+                log_success "Redis 已启动，密码校验通过（conf: $LOG_DIR/redis-prod.conf）"
+            else
+                log_error "Redis 已监听但密码认证失败"
+                return 1
+            fi
+        else
+            log_error "Redis 启动失败，见 $LOG_DIR/redis-startup.log"
+            return 1
+        fi
+    else
+        if ! redis-cli -h 127.0.0.1 -p "$REDIS_PORT" -a "$REDIS_PASSWORD" ping >/dev/null 2>&1; then
+            log_error "Redis 已在运行但密码认证失败，请检查 REDIS_PASSWORD 与实例 requirepass 是否一致"
+            return 1
+        fi
+        log_info "Redis 已在运行且密码校验通过（仓库参考: $PROJECT_DIR/redis.conf、redis-prod.conf）"
+    fi
+    return 0
+}
+
 # 启动开发环境
 start_dev() {
     log_info "启动开发环境 (TypeScript)..."
@@ -234,18 +331,7 @@ start_prod() {
     log_info "启动生产环境 (TypeScript)..."
     
     ensure_dirs
-    
-    # 加载环境变量（优先使用 .env.prod）
-    local env_file="$PROJECT_DIR/.env.prod"
-    if [ ! -f "$env_file" ]; then
-        env_file="$PROJECT_DIR/.env"
-    fi
-    
-    if [ -f "$env_file" ]; then
-        load_env_file "$env_file"
-    else
-        log_warning "未找到 .env.prod 或 .env，将仅使用当前 shell 已 export 的变量"
-    fi
+    load_stack_env
     
     # 检查必要的环境变量（禁止在脚本中写死默认密码）
     if [ -z "${REDIS_PASSWORD:-}" ]; then
@@ -256,7 +342,7 @@ start_prod() {
     log_info "生产环境配置："
     echo "  NODE_ENV: ${NODE_ENV:-production}"
     echo "  PORT: ${PORT:-3001}"
-    echo "  REDIS_HOST: ${REDIS_HOST:-redis}"
+    echo "  REDIS_HOST: ${REDIS_HOST:-127.0.0.1}"
     echo "  REDIS_PORT: ${REDIS_PORT:-6379}"
     echo "  REDIS_DB: ${REDIS_DB:-0}"
     echo "  MAX_MEMORY_RESTART: ${MAX_MEMORY_RESTART:-1G}"
@@ -264,21 +350,8 @@ start_prod() {
     
     # 构建 TypeScript 后端和 React 前端
     if [ ! -d "dist" ] || [ ! -d "client/build" ]; then
-        log_info "构建项目..."
-        npm run build
-    fi
-    
-    # 检查端口是否被占用
-    if check_port $REDIS_PORT; then
-        log_warning "Redis端口 $REDIS_PORT 已被占用:"
-        get_port_process $REDIS_PORT
-        read -p "是否停止占用进程? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            kill_port_process $REDIS_PORT
-        else
-            log_warning "跳过Redis服务启动"
-        fi
+        log_info "未检测到构建产物，正在构建..."
+        run_build
     fi
     
     if check_port $BACKEND_PORT; then
@@ -294,69 +367,7 @@ start_prod() {
         fi
     fi
     
-    if check_port $NGINX_PORT; then
-        log_warning "Nginx端口 $NGINX_PORT 已被占用:"
-        get_port_process $NGINX_PORT
-        read -p "是否停止占用进程? (y/N): " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            kill_port_process $NGINX_PORT
-        else
-            log_error "无法启动Nginx，端口被占用"
-            return 1
-        fi
-    fi
-    
-    # 启动Redis服务（如果可用）
-    if ! check_port $REDIS_PORT; then
-        if command -v redis-server >/dev/null 2>&1; then
-            log_info "启动Redis服务（带密码认证）..."
-            # 创建带密码的Redis配置
-            cat > "$LOG_DIR/redis-prod.conf" << EOF
-bind 127.0.0.1
-port $REDIS_PORT
-daemonize yes
-pidfile $LOG_DIR/redis_6379.pid
-logfile $LOG_DIR/redis.log
-dbfilename dump.rdb
-dir $LOG_DIR/
-requirepass $REDIS_PASSWORD
-save 900 1
-save 300 10
-save 60 10000
-appendonly yes
-appendfilename appendonly.aof
-appendfsync everysec
-maxmemory 256mb
-maxmemory-policy allkeys-lru
-EOF
-            
-            nohup redis-server "$LOG_DIR/redis-prod.conf" > "$LOG_DIR/redis-startup.log" 2>&1 &
-            sleep 3
-            if check_port $REDIS_PORT; then
-                # 验证密码认证
-                if redis-cli -h 127.0.0.1 -p $REDIS_PORT -a "$REDIS_PASSWORD" ping >/dev/null 2>&1; then
-                    log_success "Redis服务启动成功，密码认证已启用"
-                else
-                    log_error "Redis服务启动但密码认证失败"
-                    return 1
-                fi
-            else
-                log_error "Redis服务启动失败"
-                return 1
-            fi
-        else
-            log_error "Redis未安装，无法启动生产环境"
-            return 1
-        fi
-    else
-        # 如果Redis已运行，检查密码认证
-        if ! redis-cli -h 127.0.0.1 -p $REDIS_PORT -a "$REDIS_PASSWORD" ping >/dev/null 2>&1; then
-            log_error "Redis服务已运行但密码认证失败，请检查配置"
-            return 1
-        fi
-        log_info "Redis服务已运行且密码认证正常"
-    fi
+    ensure_redis_running || return 1
     
     # 启动后端服务 (使用PM2或直接启动)
     log_info "启动后端服务..."
@@ -389,29 +400,11 @@ EOF
     # 等待后端服务启动
     sleep 3
     
-    # 启动Nginx (如果配置存在)
-    if [ -f "nginx.conf" ] && command -v nginx >/dev/null 2>&1; then
-        log_info "启动Nginx..."
-        nginx -c "$PROJECT_DIR/nginx.conf"
-        sleep 2
-        
-        if check_port $NGINX_PORT; then
-            log_success "生产环境启动成功!"
-            echo "   Web服务:  http://localhost:$NGINX_PORT"
-            echo "   后端API:  http://localhost:$BACKEND_PORT"
-            echo "   Redis:    redis://localhost:$REDIS_PORT"
-            echo "   日志文件: $LOG_DIR/"
-        else
-            log_warning "Nginx启动失败，但后端服务可用"
-            echo "   后端API: http://localhost:$BACKEND_PORT"
-            echo "   Redis:   redis://localhost:$REDIS_PORT"
-        fi
-    else
-        log_warning "Nginx未配置或未安装，仅启动后端服务"
-        echo "   后端API: http://localhost:$BACKEND_PORT"
-        echo "   Redis:   redis://localhost:$REDIS_PORT"
-        echo "   可以直接访问 client/build/index.html"
-    fi
+    log_success "生产环境后端已启动（反向代理请自行配置；可参考 docs/nginx部署示例.conf）"
+    echo "   后端 API: http://localhost:$BACKEND_PORT"
+    echo "   前端静态: client/build（由 Nginx/Caddy/对象存储等自行托管）"
+    echo "   Redis:    redis://localhost:$REDIS_PORT"
+    echo "   日志目录: $LOG_DIR/"
 }
 
 # 停止服务
@@ -596,36 +589,68 @@ show_logs() {
     fi
 }
 
+# 仅启动 Redis（需 .env / .env.prod 中 REDIS_PASSWORD）
+start_redis_only() {
+    log_info "仅启动 / 检测 Redis..."
+    ensure_dirs
+    load_stack_env
+    if [ -z "${REDIS_PASSWORD:-}" ]; then
+        log_error "需要 REDIS_PASSWORD（见 .env / .env.prod）"
+        return 1
+    fi
+    ensure_redis_running
+}
+
+# 一键：安装依赖 → 构建 → 生产启动（含 Redis + 后端）
+run_up() {
+    log_info "=== 一键 up：install → build → start-prod ==="
+    ensure_dirs
+    install_deps
+    run_build
+    start_prod
+}
+
 # 显示帮助信息
 show_help() {
     echo "Web工具集 服务管理脚本 (TypeScript版本 + Redis支持)"
     echo ""
     echo "用法: $0 <命令> [选项]"
     echo ""
-    echo "命令:"
+    echo "一键 / 常用:"
+    echo "  install       安装依赖（根目录 + client 的 npm install）"
+    echo "  build         构建项目（npm run build：TS + React）"
+    echo "  start-redis   仅启动或校验本机 Redis（读 .env / .env.prod）"
+    echo "  up            一键：install → build → start-prod（含 Redis + PM2/Node）"
+    echo "  down          一键停止（同 stop：PM2/端口进程/尝试停 nginx）"
+    echo "  restart       一键重启生产（stop 后 start-prod，等同 restart-prod）"
+    echo ""
+    echo "服务:"
     echo "  start-dev     启动开发环境"
-    echo "  start-prod    启动生产环境 (包含Redis)"
-    echo "  stop          停止所有服务"
+    echo "  start-prod    启动生产环境 (含 Redis + 后端)"
+    echo "  stop          停止所有服务（与 down 相同）"
     echo "  restart-dev   重启开发环境"
-    echo "  restart-prod  重启生产环境"
+    echo "  restart-prod  重启生产环境（与 restart 相同）"
     echo "  status        查看服务状态"
     echo "  logs [type]   查看日志 (dev|prod|redis|error|out)"
-    echo "  build         构建项目 (TypeScript编译 + React构建)"
     echo "  help          显示此帮助信息"
     echo ""
     echo "Redis相关环境变量:"
-    echo "  REDIS_HOST     Redis服务器地址 (默认: redis，见 .env)"
+    echo "  REDIS_HOST     Redis服务器地址 (默认: 127.0.0.1，见 .env)"
     echo "  REDIS_PORT     Redis端口 (默认: 6379)"
-    echo "  REDIS_PASSWORD 生产启动 start-prod 必填，勿在脚本中硬编码"
+    echo "  REDIS_PASSWORD start-prod / start-redis / up 必填，勿在脚本中硬编码"
     echo "  REDIS_DB       Redis数据库索引 (默认: 0)"
     echo ""
     echo "示例:"
-    echo "  $0 start-dev      # 启动开发环境"
-    echo "  $0 start-prod     # 启动生产环境 (含Redis)"
-    echo "  $0 build          # 构建项目"
-    echo "  $0 restart-prod   # 重启生产环境"
-    echo "  $0 status         # 查看服务状态"
-    echo "  $0 logs redis     # 查看Redis日志"
+    echo "  $0 install        # 只装依赖"
+    echo "  $0 build          # 只构建"
+    echo "  $0 start-redis    # 只起 Redis"
+    echo "  $0 up             # 依赖 + 构建 + 生产启动（推荐首次部署）"
+    echo "  $0 down           # 一键停止"
+    echo "  $0 restart        # 一键重启生产"
+    echo "  $0 start-prod     # 已有构建产物时启动生产"
+    echo "  $0 start-dev      # 开发环境"
+    echo "  $0 status"
+    echo "  $0 logs redis"
     echo ""
 }
 
@@ -637,14 +662,14 @@ case "${1:-}" in
     "start-prod")
         start_prod
         ;;
-    "stop")
+    "stop"|"down")
         stop_services
+        ;;
+    "restart"|"restart-prod")
+        restart_services "prod"
         ;;
     "restart-dev")
         restart_services "dev"
-        ;;
-    "restart-prod")
-        restart_services "prod"
         ;;
     "status")
         check_status
@@ -652,10 +677,19 @@ case "${1:-}" in
     "logs")
         show_logs "${2:-dev}"
         ;;
+    "install")
+        ensure_dirs
+        install_deps
+        ;;
     "build")
-        log_info "构建 TypeScript 项目..."
-        npm run build
-        log_success "项目构建完成"
+        ensure_dirs
+        run_build
+        ;;
+    "start-redis")
+        start_redis_only
+        ;;
+    "up")
+        run_up
         ;;
     "help"|"--help"|"-h")
         show_help
