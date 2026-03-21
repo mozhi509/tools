@@ -9,9 +9,25 @@ import shareRouter from './routes/share';
 import chatRouter from './routes/chat';
 import { connectRedis, disconnectRedis } from './redis';
 
+/** 生产环境允许的浏览器 Origin（未设 CORS_ORIGINS 时含主域与 www） */
+function getProductionCorsOrigins(): string[] {
+  const raw = process.env.CORS_ORIGINS;
+  if (raw && raw.trim()) {
+    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return ['https://zhimingli.com', 'https://www.zhimingli.com'];
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
-app.set('trust proxy', true);
+
+// 勿使用 trust proxy: true —— express-rate-limit 会报 ERR_ERL_PERMISSIVE_TRUST_PROXY。
+// 前面有几层反代（通常 Nginx=1），用数字；本地直连 Node 用 false。
+const trustProxyHops =
+  process.env.NODE_ENV === 'production'
+    ? Number(process.env.TRUST_PROXY_HOPS ?? 1)
+    : 0;
+app.set('trust proxy', trustProxyHops <= 0 ? false : trustProxyHops);
 
 // 安全中间件
 app.use(helmet({
@@ -36,12 +52,15 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // 中间件
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://zhimingli.com'] 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? getProductionCorsOrigins()
+        : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
