@@ -74,6 +74,12 @@ export const connectRedis = async () => {
   try {
     const c = getOrCreateClient();
     if (!c.isOpen) {
+      const pw = process.env.REDIS_PASSWORD?.trim();
+      if (!pw) {
+        console.warn(
+          '[redis] REDIS_PASSWORD 未设置：若实例启用了 requirepass，将报 NOAUTH。请在根目录 .env 中设置并与 redis-cli CONFIG GET requirepass 一致，然后重启 Node。'
+        );
+      }
       console.log('Connecting to Redis...');
       await c.connect();
       console.log('Redis connected successfully');
@@ -82,7 +88,7 @@ export const connectRedis = async () => {
     const msg = error instanceof Error ? error.message : String(error);
     if (/NOAUTH|Authentication required/i.test(msg)) {
       console.error(
-        'Redis NOAUTH：请确认根目录 .env / .env.prod 中 REDIS_PASSWORD 与 redis requirepass 一致，并已 npm install dotenv。'
+        'Redis NOAUTH：密码不匹配或未配置。请 (1) 根目录 .env / .env.prod 中设置 REDIS_PASSWORD（与 requirepass 一致）(2) 重启进程 (3) 服务器执行: ./manage.sh check-redis'
       );
     }
     console.error('Failed to connect to Redis:', error);

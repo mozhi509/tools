@@ -458,6 +458,78 @@ restart_services() {
     fi
 }
 
+# 检查 Redis 是否设置 requirepass，以及 .env 中 REDIS_PASSWORD 是否可连接
+check_redis_password() {
+    echo "=========================================="
+    echo "Redis 密码检查 (requirepass)"
+    echo "=========================================="
+    load_stack_env
+    local port="${REDIS_PORT:-6379}"
+    local env_pw
+    env_pw=$(resolve_redis_password)
+
+    if ! command -v redis-cli >/dev/null 2>&1; then
+        log_error "未安装 redis-cli，无法检查"
+        return 1
+    fi
+    if ! check_port "$port"; then
+        log_error "127.0.0.1:$port 无监听（Redis 未启动或端口不一致）"
+        echo "  提示: 检查 REDIS_PORT 与实例是否一致"
+        return 1
+    fi
+
+    echo "  目标: 127.0.0.1:$port"
+    if [ -n "$env_pw" ]; then
+        echo "  .env/.env.prod: 已解析到 REDIS_PASSWORD（${#env_pw} 字符）"
+    else
+        echo "  .env/.env.prod: 未配置 REDIS_PASSWORD"
+    fi
+    echo ""
+
+    # 无密码 PING
+    if redis-cli -h 127.0.0.1 -p "$port" ping 2>/dev/null | grep -q PONG; then
+        local req
+        req=$(redis-cli -h 127.0.0.1 -p "$port" CONFIG GET requirepass 2>/dev/null | tail -n1 | tr -d '\r')
+        if [ -z "$req" ]; then
+            log_warning "服务端 requirepass: 未设置（允许无密码连接）"
+        else
+            log_success "服务端 requirepass: 已设置（非空，不在此打印）"
+        fi
+        if [ -n "$env_pw" ]; then
+            if REDISCLI_AUTH="$env_pw" redis-cli -h 127.0.0.1 -p "$port" ping 2>/dev/null | grep -q PONG; then
+                log_success "使用 .env 中的密码可正常 AUTH + PING"
+            else
+                log_warning "使用 .env 中的密码无法通过认证（若已设 requirepass，请对齐密码）"
+            fi
+        fi
+        echo ""
+        echo "命令自查: redis-cli -h 127.0.0.1 -p $port CONFIG GET requirepass"
+        return 0
+    fi
+
+    # 无密码连不上，尝试用 .env 密码
+    if [ -z "$env_pw" ]; then
+        log_error "连接被拒绝或需要密码，但未配置 REDIS_PASSWORD（请在 .env 或 .env.prod 中设置）"
+        return 1
+    fi
+    if REDISCLI_AUTH="$env_pw" redis-cli -h 127.0.0.1 -p "$port" ping 2>/dev/null | grep -q PONG; then
+        log_success "Redis 需要密码，且当前 .env 中 REDIS_PASSWORD 可连接"
+        local req
+        req=$(REDISCLI_AUTH="$env_pw" redis-cli -h 127.0.0.1 -p "$port" CONFIG GET requirepass 2>/dev/null | tail -n1 | tr -d '\r')
+        if [ -n "$req" ]; then
+            echo "  CONFIG requirepass: 已设置（非空）"
+        else
+            echo "  CONFIG requirepass: 空（若仍要求密码，可能为 ACL 等配置）"
+        fi
+        echo ""
+        echo "命令自查: REDISCLI_AUTH='你的密码' redis-cli -h 127.0.0.1 -p $port CONFIG GET requirepass"
+        return 0
+    fi
+
+    log_error "无法连接：密码错误、端口不对或 bind 限制"
+    return 1
+}
+
 # 查看服务状态
 check_status() {
     echo "=========================================="
@@ -623,6 +695,7 @@ show_help() {
     echo "  up            一键：install → build → start-prod（含 Redis + PM2/Node）"
     echo "  down          一键停止（同 stop：PM2/端口进程/尝试停 nginx）"
     echo "  restart       一键重启生产（stop 后 start-prod，等同 restart-prod）"
+    echo "  check-redis   检查 Redis 是否设置密码、.env 密码是否可连"
     echo ""
     echo "服务:"
     echo "  start-dev     启动开发环境"
@@ -650,6 +723,7 @@ show_help() {
     echo "  $0 start-prod     # 已有构建产物时启动生产"
     echo "  $0 start-dev      # 开发环境"
     echo "  $0 status"
+    echo "  $0 check-redis"
     echo "  $0 logs redis"
     echo ""
 }
@@ -673,6 +747,9 @@ case "${1:-}" in
         ;;
     "status")
         check_status
+        ;;
+    "check-redis")
+        check_redis_password
         ;;
     "logs")
         show_logs "${2:-dev}"

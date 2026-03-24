@@ -147,6 +147,7 @@ npm start
 ./manage.sh install      # 根目录 + client：npm install
 ./manage.sh build        # npm run build（与 package.json 一致）
 ./manage.sh start-redis  # 仅本机 Redis（读 .env / .env.prod）
+./manage.sh check-redis   # 检查是否设置 requirepass、.env 密码能否连接（或 npm run redis:check）
 ./manage.sh start-prod   # 已有 dist/client/build 时只起生产（含 Redis）
 
 ./manage.sh status

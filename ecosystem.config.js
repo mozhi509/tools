@@ -64,7 +64,8 @@ module.exports = {
     ignore_watch: ['node_modules', 'logs', 'uploads', 'dist'],
     restart_delay: 4000,
     kill_timeout: 5000,
-    listen_timeout: 3000,
+    // 须在 connectRedis 之后再 listen，应大于 Redis 连接耗时（见 server/index.ts）
+    listen_timeout: 20000,
     autorestart: true,
     min_uptime: '10s',
     max_restarts: 10,
