@@ -16,7 +16,15 @@ const getRedisConfig = () => {
   const db = parseInt(process.env.REDIS_DB || '0', 10);
 
   const config: {
-    socket: { host: string; port: number; connectTimeout: number; lazyConnect: boolean; family: number };
+    socket: {
+      host: string;
+      port: number;
+      connectTimeout: number;
+      lazyConnect: boolean;
+      family: number;
+      keepAlive: boolean;
+      reconnectStrategy: (retries: number) => number | Error;
+    };
     database: number;
     password?: string;
   } = {
@@ -26,6 +34,13 @@ const getRedisConfig = () => {
       connectTimeout: 10000,
       lazyConnect: true,
       family: 4,
+      keepAlive: true,
+      reconnectStrategy: (retries: number) => {
+        if (retries > 50) {
+          return new Error('Redis 重连次数过多，请检查网络与 Redis 服务');
+        }
+        return Math.min(retries * 100, 3000);
+      },
     },
     database: db,
   };

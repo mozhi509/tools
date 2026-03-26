@@ -1,4 +1,5 @@
 import './loadEnv';
+import type { Server } from 'http';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -87,15 +88,33 @@ const startServer = async () => {
   try {
     // 连接 Redis
     await connectRedis();
-    
-    app.listen(PORT, () => {
+
+    const server: Server = app.listen(PORT, () => {
       console.log(`服务器运行在端口 ${PORT}`);
+    });
+
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      console.error('HTTP 监听错误:', err.code ?? err.message, err);
+    });
+
+    server.on('close', () => {
+      console.log('HTTP 服务已停止监听');
     });
   } catch (error) {
     console.error('启动服务器失败:', error);
     process.exit(1);
   }
 };
+
+process.on('uncaughtException', (err) => {
+  console.error('uncaughtException:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('unhandledRejection:', reason);
+  process.exit(1);
+});
 
 // 优雅关闭
 process.on('SIGINT', async () => {

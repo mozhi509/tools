@@ -13,6 +13,7 @@
     "restart": "bash manage.sh restart",
     "redis:check": "bash manage.sh check-redis",
     "server": "node dist/index.js",
+    "server:prod": "bash scripts/run-prod-server.sh",
     "server:dev": "nodemon --exec ts-node server/index.ts",
     "server:build": "tsc",
     "client": "cd client && npm start",
