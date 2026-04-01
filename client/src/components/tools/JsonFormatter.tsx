@@ -20,24 +20,52 @@ interface JsonTab {
   expandedNodes: Set<string>;
 }
 
+const TABS_STORAGE_KEY = 'json-formatter-tabs-v1';
+
+const defaultTabs = (): JsonTab[] => [
+  {
+    id: '1',
+    name: 'Untitled-1.json',
+    content: '',
+    output: '',
+    isValid: null,
+    validationError: '',
+    showOutput: false,
+    lastModified: Date.now(),
+    isEditing: false,
+    viewMode: 'text',
+    expandedNodes: new Set(),
+  },
+];
+
+function loadPersistedTabs(): { tabs: JsonTab[]; activeTabId: string } | null {
+  try {
+    const raw = localStorage.getItem(TABS_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as {
+      tabs?: Array<Omit<JsonTab, 'expandedNodes'> & { expandedNodes?: string[] }>;
+      activeTabId?: string;
+    };
+    if (!data.tabs?.length) return null;
+    const tabs: JsonTab[] = data.tabs.map((t) => ({
+      ...t,
+      expandedNodes: new Set(Array.isArray(t.expandedNodes) ? t.expandedNodes : []),
+    }));
+    const activeTabId =
+      data.activeTabId && tabs.some((t) => t.id === data.activeTabId)
+        ? data.activeTabId
+        : tabs[0].id;
+    return { tabs, activeTabId };
+  } catch {
+    return null;
+  }
+}
+
 const JsonFormatter: React.FC = () => {
   const { shareId } = useParams<{ shareId?: string }>();
-  const [tabs, setTabs] = useState<JsonTab[]>([
-    {
-      id: '1',
-      name: 'Untitled-1.json',
-      content: '',
-      output: '',
-      isValid: null,
-      validationError: '',
-      showOutput: false,
-      lastModified: Date.now(),
-      isEditing: false,
-      viewMode: 'text',
-      expandedNodes: new Set()
-    }
-  ]);
-  const [activeTabId, setActiveTabId] = useState<string>('1');
+  const persisted = typeof window !== 'undefined' ? loadPersistedTabs() : null;
+  const [tabs, setTabs] = useState<JsonTab[]>(() => persisted?.tabs ?? defaultTabs());
+  const [activeTabId, setActiveTabId] = useState<string>(() => persisted?.activeTabId ?? '1');
   const [processing, setProcessing] = useState<boolean>(false);
   const [indentSize, setIndentSize] = useState<number>(2);
 
@@ -59,6 +87,22 @@ const JsonFormatter: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('json-formatter-indent', indentSize.toString());
   }, [indentSize]);
+
+  // 左侧输入与各标签状态落盘，刷新后仍保留
+  useEffect(() => {
+    try {
+      const payload = {
+        tabs: tabs.map((t) => ({
+          ...t,
+          expandedNodes: Array.from(t.expandedNodes),
+        })),
+        activeTabId,
+      };
+      localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [tabs, activeTabId]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -153,10 +197,13 @@ const JsonFormatter: React.FC = () => {
     await formatJsonWithContent();
   };
 
-  // Format with specific content
+  // Format with specific content（返回时若左侧已编辑过，与本次请求 snapshot 不一致则不再覆盖右侧，避免异步抢写）
   const formatJsonWithContent = async (content?: string) => {
     const jsonToFormat = content || activeTab.content;
     if (!jsonToFormat.trim()) return;
+
+    const tabIdForRequest = activeTabId;
+    const snapshot = jsonToFormat;
 
     setProcessing(true);
     try {
@@ -165,35 +212,53 @@ const JsonFormatter: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           json: jsonToFormat,
-          indent: indentSize 
+          indent: indentSize,
         }),
       });
 
       const data = await response.json();
-      
-      if (data.success && data.formatted) {
-        updateTab(activeTabId, {
-          output: data.formatted,
-          showOutput: true,
-          isValid: true,
-          validationError: '',
-          expandedNodes: new Set(['root'])
-        });
-      } else {
-        updateTab(activeTabId, {
-          output: data.error || '格式化失败',
-          isValid: false,
-          validationError: data.error || ''
-        });
-      }
-    } catch (error) {
-      updateTab(activeTabId, {
-        output: '网络连接错误',
-        isValid: false,
-        validationError: '网络连接错误'
-      });
+
+      setTabs((prev) =>
+        prev.map((tab) => {
+          if (tab.id !== tabIdForRequest) return tab;
+          if (tab.content !== snapshot) return tab;
+
+          if (data.success && data.formatted) {
+            return {
+              ...tab,
+              output: data.formatted,
+              showOutput: true,
+              isValid: true,
+              validationError: '',
+              expandedNodes: new Set(['root']),
+              lastModified: Date.now(),
+            };
+          }
+          return {
+            ...tab,
+            output: data.error || '格式化失败',
+            isValid: false,
+            validationError: data.error || '',
+            lastModified: Date.now(),
+          };
+        })
+      );
+    } catch (_error) {
+      setTabs((prev) =>
+        prev.map((tab) => {
+          if (tab.id !== tabIdForRequest) return tab;
+          if (tab.content !== snapshot) return tab;
+          return {
+            ...tab,
+            output: '网络连接错误',
+            isValid: false,
+            validationError: '网络连接错误',
+            lastModified: Date.now(),
+          };
+        })
+      );
     } finally {
       setProcessing(false);
     }
@@ -274,57 +339,86 @@ const JsonFormatter: React.FC = () => {
   };
 
   const shareJson = async () => {
-    // Get the actual content that's being displayed
     const contentToShare = activeTab.showOutput && activeTab.output ? activeTab.output : activeTab.content;
-    
+    if (!contentToShare.trim()) {
+      window.alert('请先输入要分享的内容');
+      return;
+    }
+
     setShareLoading(true);
     try {
-      // 确保使用实际的内容作为data字段
       const shareData = {
-        data: contentToShare, // Use the actual content being shared
+        data: contentToShare,
         output: activeTab.output,
         showOutput: activeTab.showOutput,
         isValid: activeTab.isValid,
-        validationError: activeTab.validationError
+        validationError: activeTab.validationError,
       };
-      
-      console.log('分享数据:', shareData);
-      console.log('contentToShare:', contentToShare);
-      console.log('activeTab.content:', activeTab.content);
-      console.log('activeTab.output:', activeTab.output);
-      
-      const response = await fetch(API_ENDPOINTS.share.create, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(shareData),
-      });
 
-      console.log('分享响应状态:', response.status);
-      
-      const result = await response.json();
-      console.log('分享响应结果:', result);
-      
-      if (result.success) {
-        setShareUrl(result.shareUrl);
+      let response: Response;
+      try {
+        response = await fetch(API_ENDPOINTS.share.create, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(shareData),
+        });
+      } catch (netErr) {
+        console.error('分享请求失败:', netErr);
+        const isFailedFetch =
+          netErr instanceof TypeError && /fetch|network|load failed/i.test(netErr.message);
+        window.alert(
+          isFailedFetch
+            ? '分享失败：无法连接后端（Failed to fetch）。请确认：1）已启动 API（默认端口 3001，如 npm run server:dev）；2）开发环境用 npm start 打开站点以便代理 /api；3）勿用本地 file:// 打开页面；4）前后端分离时构建前设置 REACT_APP_API_BASE_URL。'
+            : `分享失败：${netErr instanceof Error ? netErr.message : String(netErr)}`
+        );
+        return;
+      }
+
+      const text = await response.text();
+      let result: {
+        success?: boolean;
+        shareUrl?: string;
+        shareId?: string;
+        error?: string;
+        details?: string;
+      };
+      try {
+        result = text ? (JSON.parse(text) as typeof result) : {};
+      } catch {
+        window.alert(
+          `分享失败：接口返回的不是 JSON（HTTP ${response.status}）。常见原因：静态页未由 Node/Nginx 转发 /api，或请求打到了错误主机。`
+        );
+        return;
+      }
+
+      if (response.ok && result.success && (result.shareUrl || result.shareId)) {
+        const url =
+          result.shareUrl && /^https?:\/\//i.test(result.shareUrl)
+            ? result.shareUrl
+            : `${window.location.origin}/share/${String(result.shareId)}`;
+        setShareUrl(url);
         setShowShareModal(true);
       } else {
-        console.error('分享失败原因:', result);
+        const msg =
+          result.error || result.details || `分享失败（HTTP ${response.status}）`;
+        window.alert(`${msg}\n\n若与 Redis 相关，请确认本机 Redis 已启动且 .env 中 REDIS_PASSWORD 与实例一致。`);
       }
     } catch (error) {
       console.error('分享失败:', error);
+      window.alert(
+        `分享失败：${error instanceof Error ? error.message : String(error)}`
+      );
     } finally {
       setShareLoading(false);
     }
   };
 
-  // Check if share button should be shown
-  const shouldShowShareButton = () => {
+  /** 有内容即可分享（不因「校验未通过」隐藏按钮；JSON 不合法也可分享原始文本） */
+  const canShareContent = (): boolean => {
     const contentToShare = activeTab.showOutput && activeTab.output ? activeTab.output : activeTab.content;
-    const hasContent = contentToShare.trim();
-    const isValidJson = activeTab.isValid === true || activeTab.isValid === null;
-    return hasContent && isValidJson;
+    return contentToShare.trim().length > 0;
   };
 
   const loadSharedJson = async (shareId: string) => {
@@ -947,23 +1041,24 @@ const JsonFormatter: React.FC = () => {
             >
               下载
             </button>
-            {shouldShowShareButton() && (
-              <button
-                onClick={shareJson}
-                disabled={shareLoading}
-                style={{
-                  backgroundColor: currentTheme.button,
-                  color: currentTheme.foreground,
-                  border: `1px solid ${currentTheme.border}`,
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  cursor: shareLoading ? 'not-allowed' : 'pointer',
-                  fontSize: '12px',
-                }}
-              >
-                {shareLoading ? '生成中...' : '分享'}
-              </button>
-            )}
+            <button
+              type="button"
+              title={canShareContent() ? '生成分享链接（需 Redis）' : '请先输入内容'}
+              onClick={shareJson}
+              disabled={shareLoading || !canShareContent()}
+              style={{
+                backgroundColor: currentTheme.button,
+                color: currentTheme.foreground,
+                border: `1px solid ${currentTheme.border}`,
+                padding: '4px 8px',
+                borderRadius: '4px',
+                cursor: shareLoading || !canShareContent() ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
+                opacity: canShareContent() ? 1 : 0.55,
+              }}
+            >
+              {shareLoading ? '生成中...' : '分享'}
+            </button>
           </div>
         </div>
       </div>
@@ -974,101 +1069,52 @@ const JsonFormatter: React.FC = () => {
         flexDirection: 'column',
         padding: '16px',
         overflow: 'hidden',
+        minHeight: 0,
       }}>
-        {/* Single input area with auto-format */}
+        {/* 左输入 / 右结果，工具栏按钮逻辑不变 */}
         <div style={{
           flex: 1,
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
+          gap: '12px',
+          minHeight: 0,
         }}>
-          {activeTab.showOutput && activeTab.output && activeTab.viewMode === 'tree' ? (
-            <div style={{
-              flex: 1,
-              padding: '12px',
-              backgroundColor: currentTheme.header,
-              border: `1px solid ${currentTheme.border}`,
-              borderRadius: '6px',
-              overflow: 'auto',
-              textAlign: 'left',
-              fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-              fontSize: '14px',
-              lineHeight: '1.5',
-            }}>
-              {(() => {
-                try {
-                  const data = JSON.parse(activeTab.output);
-                  return renderJsonTree(data, 'root', 0, activeTab.expandedNodes, (path: string) => {
-                    const newExpandedNodes = new Set(activeTab.expandedNodes);
-                    if (newExpandedNodes.has(path)) {
-                      newExpandedNodes.delete(path);
-                    } else {
-                      newExpandedNodes.add(path);
-                    }
-                    updateTab(activeTabId, { expandedNodes: newExpandedNodes });
-                  });
-                } catch (e) {
-                  return (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      height: '100%',
-                      color: '#da3633',
-                      fontSize: '14px',
-                    }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
-                        <div>JSON 格式错误</div>
-                      </div>
-                    </div>
-                  );
-                }
-              })()}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+            <div style={{ marginBottom: '6px', fontSize: '12px', color: currentTheme.placeholder, textAlign: 'left' }}>
+              输入 JSON
             </div>
-          ) : (
             <textarea
-              value={activeTab.showOutput && activeTab.output ? activeTab.output : activeTab.content}
+              value={activeTab.content}
               onChange={(e) => {
                 const newContent = e.target.value;
-                updateTab(activeTabId, { 
+                updateTab(activeTabId, {
                   content: newContent,
                   showOutput: false,
                   isValid: null,
                   validationError: '',
-                  expandedNodes: new Set()
+                  expandedNodes: new Set(),
                 });
-                
-                // Auto-format on input change
                 debouncedFormatJson(newContent, 500);
               }}
               onPaste={(e) => {
-                // Handle paste events to ensure auto-formatting
+                const textarea = e.currentTarget as HTMLTextAreaElement;
                 setTimeout(() => {
-                  const textarea = e.currentTarget;
+                  if (!textarea?.isConnected) return;
                   const newContent = textarea.value;
-                  updateTab(activeTabId, { 
+                  updateTab(activeTabId, {
                     content: newContent,
                     showOutput: false,
                     isValid: null,
                     validationError: '',
-                    expandedNodes: new Set()
+                    expandedNodes: new Set(),
                   });
-                  
                   debouncedFormatJson(newContent, 500);
                 }, 100);
-              }}
-              onFocus={(e) => {
-                // When focus enters, if showing formatted output, switch to input mode
-                if (activeTab.showOutput && activeTab.output) {
-                  updateTab(activeTabId, { 
-                    content: activeTab.output,
-                    showOutput: false
-                  });
-                }
               }}
               placeholder="在此输入 JSON 数据，自动格式化..."
               style={{
                 flex: 1,
+                minHeight: 0,
                 padding: '12px',
                 backgroundColor: currentTheme.background,
                 color: currentTheme.foreground,
@@ -1079,28 +1125,101 @@ const JsonFormatter: React.FC = () => {
                 fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
                 fontSize: '14px',
                 lineHeight: '1.5',
-                caretColor: currentTheme.button
+                caretColor: currentTheme.button,
               }}
             />
-          )}
-          
-          {activeTab.validationError && (
-            <div style={{
-              marginTop: '8px',
-              padding: '8px 12px',
-              backgroundColor: '#da3633',
-              color: 'white',
-              fontSize: '12px',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
-              <span style={{ fontSize: '14px' }}>⚠️</span>
-              {activeTab.validationError}
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+            <div style={{ marginBottom: '6px', fontSize: '12px', color: currentTheme.placeholder, textAlign: 'left' }}>
+              格式化结果
             </div>
-          )}
+            {activeTab.showOutput && activeTab.output && activeTab.viewMode === 'tree' ? (
+              <div style={{
+                flex: 1,
+                minHeight: 0,
+                padding: '12px',
+                backgroundColor: currentTheme.header,
+                border: `1px solid ${currentTheme.border}`,
+                borderRadius: '6px',
+                overflow: 'auto',
+                textAlign: 'left',
+                fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+                fontSize: '14px',
+                lineHeight: '1.5',
+              }}>
+                {(() => {
+                  try {
+                    const data = JSON.parse(activeTab.output);
+                    return renderJsonTree(data, 'root', 0, activeTab.expandedNodes, (path: string) => {
+                      const newExpandedNodes = new Set(activeTab.expandedNodes);
+                      if (newExpandedNodes.has(path)) {
+                        newExpandedNodes.delete(path);
+                      } else {
+                        newExpandedNodes.add(path);
+                      }
+                      updateTab(activeTabId, { expandedNodes: newExpandedNodes });
+                    });
+                  } catch (e) {
+                    return (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: '#da3633',
+                        fontSize: '14px',
+                      }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+                          <div>JSON 格式错误</div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            ) : (
+              <textarea
+                readOnly
+                value={activeTab.showOutput && activeTab.output ? activeTab.output : ''}
+                placeholder="左侧输入后，结果将显示在此；可切换「树形视图」查看折叠结构"
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  padding: '12px',
+                  backgroundColor: currentTheme.header,
+                  color: currentTheme.foreground,
+                  border: `1px solid ${currentTheme.border}`,
+                  borderRadius: '6px',
+                  outline: 'none',
+                  resize: 'none',
+                  fontFamily: "'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                }}
+              />
+            )}
+          </div>
         </div>
+
+        {activeTab.validationError && (
+          <div style={{
+            marginTop: '8px',
+            padding: '8px 12px',
+            backgroundColor: '#da3633',
+            color: 'white',
+            fontSize: '12px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: '14px' }}>⚠️</span>
+            {activeTab.validationError}
+          </div>
+        )}
       </div>
 
       {showShareModal && shareUrl && (

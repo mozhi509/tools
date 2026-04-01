@@ -1,10 +1,17 @@
 /**
- * 始终使用同源 `/api`：
- * - 开发：`setupProxy.js` 将 `/api` 转到 `http://localhost:3001`
- * - 生产：与 Express 静态站同源
- * 避免开发时直连 3001 与页面 host（localhost / 127.0.0.1）不一致导致 CORS 或 Failed to fetch。
+ * API 根路径：
+ * - 默认 `/api`：开发时由 `setupProxy.js` 转到 `http://localhost:3001`；生产与 Express 同源。
+ * - 可选 `REACT_APP_API_BASE_URL`（构建时注入）：前后端分离部署时设为完整前缀，如 `https://api.example.com/api`（勿尾斜杠）。
  */
-export const API_BASE_URL = '/api';
+function normalizeApiBase(): string {
+  const raw = process.env.REACT_APP_API_BASE_URL;
+  if (raw == null || !String(raw).trim()) {
+    return '/api';
+  }
+  return String(raw).trim().replace(/\/$/, '');
+}
+
+export const API_BASE_URL = normalizeApiBase();
 
 export const API_ENDPOINTS = {
   json: {

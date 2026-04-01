@@ -86,8 +86,14 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 // 启动服务器
 const startServer = async () => {
   try {
-    // 连接 Redis
-    await connectRedis();
+    try {
+      await connectRedis();
+    } catch (redisErr) {
+      console.warn(
+        '[redis] 启动时未能连接 Redis；分享等将走内存兜底或失败，聊天会话将不可用。请检查 Redis 与 REDIS_*。',
+        redisErr instanceof Error ? redisErr.message : redisErr
+      );
+    }
 
     const server: Server = app.listen(PORT, () => {
       console.log(`服务器运行在端口 ${PORT}`);

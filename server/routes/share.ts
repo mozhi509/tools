@@ -1,39 +1,51 @@
 import express from 'express';
 import { redisClient, connectRedis } from '../redis';
+import { setShareMemory, getShareMemory } from '../shareMemory';
 
 const router = express.Router();
 
-// 存储分享数据，生成短链接
+const PAYLOAD_TTL_SEC = 24 * 60 * 60;
+
+function buildPayload(data: unknown) {
+  return JSON.stringify({
+    data,
+    createdAt: new Date().toISOString(),
+    type: 'json-formatter',
+  });
+}
+
+// 存储分享数据，生成短链接（Redis 失败时降级为进程内内存）
 router.post('/create', async (req, res) => {
   try {
     const { data } = req.body;
-    
-    if (!data) {
-      return res.status(400).json({ error: '缺少数据' });
+
+    if (data === undefined || data === null || data === '') {
+      return res.status(400).json({ success: false, error: '缺少数据' });
     }
 
-    // 生成唯一ID（不使用 UUID）
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
-    const shareId = (timestamp + random).substring(0, 8); // 使用前8位作为短链接
-    
-    // 存储到 Redis，设置24小时过期
-    await connectRedis();
-    await redisClient.setEx(`share:${shareId}`, 24 * 60 * 60, JSON.stringify({
-      data,
-      createdAt: new Date().toISOString(),
-      type: 'json-formatter'
-    }));
+    const shareId = (timestamp + random).substring(0, 8);
 
-    // 动态生成分享链接，支持生产和开发环境
+    const payload = buildPayload(data);
+
+    try {
+      await connectRedis();
+      await redisClient.setEx(`share:${shareId}`, PAYLOAD_TTL_SEC, payload);
+    } catch (redisErr: unknown) {
+      const msg = redisErr instanceof Error ? redisErr.message : String(redisErr);
+      console.warn('[share] Redis 不可用，改用内存存储（仅本进程有效）:', msg);
+      setShareMemory(shareId, payload, PAYLOAD_TTL_SEC);
+    }
+
     const protocol = process.env.HTTPS_ENABLED === 'true' ? 'https' : 'http';
     const domain = process.env.DOMAIN || 'localhost:3000';
     const shareUrl = `${protocol}://${domain}/share/${shareId}`;
-    
+
     res.json({
       success: true,
       shareId,
-      shareUrl: shareUrl
+      shareUrl,
     });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
@@ -45,6 +57,7 @@ router.post('/create', async (req, res) => {
       console.error('请求体:', req.body);
     }
     res.status(500).json({
+      success: false,
       error: '服务器内部错误',
       ...(process.env.NODE_ENV !== 'production' && { details: err.message }),
     });
@@ -55,16 +68,26 @@ router.post('/create', async (req, res) => {
 router.get('/:shareId', async (req, res) => {
   try {
     const { shareId } = req.params;
-    
+
     if (!shareId) {
-      return res.status(400).json({ error: '缺少分享ID' });
+      return res.status(400).json({ success: false, error: '缺少分享ID' });
     }
 
-    await connectRedis();
-    const shareData = await redisClient.get(`share:${shareId}`);
-    
+    let shareData: string | null = null;
+    try {
+      await connectRedis();
+      shareData = await redisClient.get(`share:${shareId}`);
+    } catch (redisErr: unknown) {
+      const msg = redisErr instanceof Error ? redisErr.message : String(redisErr);
+      console.warn('[share] Redis 读取失败，尝试内存:', msg);
+    }
+
     if (!shareData) {
-      return res.status(404).json({ error: '分享链接已过期或不存在' });
+      shareData = getShareMemory(shareId);
+    }
+
+    if (!shareData) {
+      return res.status(404).json({ success: false, error: '分享链接已过期或不存在' });
     }
 
     const parsedData = JSON.parse(shareData);
@@ -72,7 +95,7 @@ router.get('/:shareId', async (req, res) => {
       success: true,
       data: parsedData.data,
       createdAt: parsedData.createdAt,
-      type: parsedData.type
+      type: parsedData.type,
     });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
@@ -82,6 +105,7 @@ router.get('/:shareId', async (req, res) => {
       console.error('获取分享数据失败:', error);
     }
     res.status(500).json({
+      success: false,
       error: '服务器内部错误',
       ...(process.env.NODE_ENV !== 'production' && { details: err.message }),
     });
